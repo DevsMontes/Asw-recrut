@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Aprovação | Staff ASW</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-panel: #121212;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --border-color: #262626;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-dark); 
+            color: var(--text-main); 
+            padding: 40px 5%; 
+            min-height: 100vh;
+        }
+
+        /* TELA DE LOGIN PRIVADA */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            padding: 32px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .login-container h2 { font-size: 20px; margin-bottom: 8px; }
+        .login-container p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+        .input-group { text-align: left; margin-bottom: 16px; }
+        label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        input { 
+            width: 100%; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color); 
+            background: var(--bg-dark); color: #fff; font-size: 14px; 
+        }
+        input:focus { outline: none; border-color: var(--primary-color); }
+
+        /* HEADER DO PAINEL */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        h1 { font-size: 22px; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        
+        .btn-logout {
+            background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
+            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px; transition: 0.2s;
+        }
+        .btn-logout:hover { color: #ef4444; border-color: #ef4444; }
+
+        /* GRID E CARDS DE CANDIDATOS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 24px; border-radius: 8px; position: relative;}
+        .card h3 { font-size: 18px; margin-bottom: 12px; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .card p { font-size: 13px; color: var(--text-muted); margin: 6px 0; line-height: 1.4; }
+        .card strong { color: #fff; font-weight: 600; }
+        
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
+        .btn-primary { background: var(--primary-color); color: #fff; width: 100%; padding: 12px; margin-top: 8px;}
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-approve { background: #16a34a; color: #fff; }
+        .btn-approve:hover { background: #15803d; }
+        .btn-reject { background: #dc2626; color: #fff; }
+        .btn-reject:hover { background: #b91c1c; }
+        
+        .empty { color: var(--text-muted); font-size: 14px; grid-column: 1 / -1; text-align: center; padding: 40px 0; }
+        
+        #adminSection { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="loginSection" class="login-container">
+        <h2>Área Restrita Staff</h2>
+        <p>Autentique-se para acessar o banco de dados realtime.</p>
+        <form id="loginForm">
+            <div class="input-group">
+                <label>E-mail de Acesso</label>
+                <input type="email" id="loginEmail" required placeholder="staff@asphaltwolves.com">
+            </div>
+            <div class="input-group">
+                <label>Senha de Segurança</label>
+                <input type="password" id="loginPassword" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="ph ph-sign-in"></i> Entrar no Painel</button>
+        </form>
+    </div>
+
+    <div id="adminSection">
+        <div class="panel-header">
+            <h1>🐺 Pedidos Pendentes de Recrutamento</h1>
+            <button class="btn-logout" onclick="fazerLogout()"><i class="ph ph-sign-out"></i> Desconectar</button>
+        </div>
+        
+        <div class="grid" id="containerPedidos">
+            <p class="empty">Buscando novas aplicações ao vivo...</p>
+        </div>
+    </div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDl5sbPsFkRCHht0_cFJv3OLTqzx1nlPqg",
+  authDomain: "recrutamento-asw.firebaseapp.com",
+  databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
+  projectId: "recrutamento-asw",
+  storageBucket: "recrutamento-asw.firebasestorage.app",
+  messagingSenderId: "1036486404644",
+  appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
+};
+
+    // Inicialização correta usando a estrutura Compat
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+    const auth = firebase.auth();
+
+    // Monitor do estado de Login (Gerencia as telas automaticamente)
+    auth.onAuthStateChanged((user) => {
+        const loginSection = document.getElementById('loginSection');
+        const adminSection = document.getElementById('adminSection');
+
+        if (user) {
+            // Se logado: oculta login e mostra o painel
+            loginSection.style.display = 'none';
+            adminSection.style.display = 'block';
+            inicializarEscutaDados();
+        } else {
+            // Se deslogado: mostra login e oculta o painel
+            loginSection.style.display = 'block';
+            adminSection.style.display = 'none';
+        }
+    });
+
+    // Evento de Login do Formulário
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // trim() remove espaços extras e toLowerCase() evita problemas com maiúsculas no início do e-mail
+        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('loginPassword').value;
+
+        auth.signInWithEmailAndPassword(email, pass)
+        .then((userCredential) => {
+            console.log("Conectado com sucesso como:", userCredential.user.email);
+        })
+        .catch(err => {
+            // Alerta amigável traduzido para os erros comuns do Firebase
+            if (err.code === 'auth/wrong-password') {
+                alert("Senha incorreta! Digite novamente.");
+            } else if (err.code === 'auth/user-not-found') {
+                alert("Este e-mail de administrador não foi encontrado.");
+            } else {
+                alert("Erro ao autenticar: " + err.message);
+            }
+            console.error(err);
+        });
+    });
+
+    // Função para desconectar do painel
+    function fazerLogout() {
+        auth.signOut().then(() => {
+            window.location.reload(); // Recarrega para limpar resquícios da memória
+        });
+    }
+
+    // Puxa e escuta aplicações pendentes ao vivo do banco
+    function inicializarEscutaDados() {
+        database.ref('aplicacoes').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
+            const container = document.getElementById('containerPedidos');
+            container.innerHTML = "";
+            
+            const dados = snapshot.val();
+            if (!dados) {
+                container.innerHTML = '<p class="empty">Nenhum formulário aguardando resposta no momento.</p>';
+                return;
+            }
+
+            Object.keys(dados).forEach(id => {
+                const app = dados[id];
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${app.nome || 'Sem Nome'}</h3>
+                    <p><strong>Discord ID:</strong> <code>${app.discord || 'Não informado'}</code></p>
+                    <p><strong>Idade:</strong> ${app.idade || '--'} anos | <strong>Horas:</strong> ${app.horas || '0'}h</p>
+                    <p><strong>Rotina Diária:</strong> ${app.rotina || 'Não informada'}</p>
+                    <p><strong>Horários Livres:</strong> ${app.horarios || 'Não informados'}</p>
+                    <p><strong>Histórico / Exp:</strong> ${app.adm || 'Nenhum'}</p>
+                    <p><strong>Intenção Liderança:</strong> ${app.ajuda || 'Não'}</p>
+                    <div class="actions">
+                        <button class="btn btn-approve" onclick="decidir('${id}', 'approved')"><i class="ph-bold ph-check"></i> Aceitar</button>
+                        <button class="btn btn-reject" onclick="decidir('${id}', 'rejected')"><i class="ph-bold ph-x"></i> Recusar</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        });
+    }
+
+    // Altera o status da ficha
+    function decidir(id, status) {
+        database.ref('aplicacoes/' + id).update({ status: status })
+        .then(() => {
+            console.log(`Pedido ${id} atualizado para ${status}`);
+        }).catch(err => {
+            alert("Erro ao atualizar dados: Verifique as regras de segurança do banco.");
+            console.error(err);
+        });
+    }
+</script>
+</body>
+</html>
