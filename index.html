@@ -11,6 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg-dark: #0a0a0a;
@@ -324,8 +327,10 @@
         </div>
 
         <div id="requisitos" class="section-title animate-fade-up">
-            <span>Critérios de Seleção</span>
-            <h2>Requisitos Mínimos</h2>
+            <div class="section-title">
+                <span>Critérios de Seleção</span>
+                <h2>Requisitos Mínimos</h2>
+            </div>
         </div>
 
         <div class="grid-layout animate-fade-up">
@@ -404,6 +409,11 @@
                         <input type="text" id="nome_game" required placeholder="Ex: Carlos / Asw_King">
                     </div>
 
+                    <div class="input-group">
+                        <label>Usuário do Discord (Tag)</label>
+                        <input type="text" id="discord_tag" required placeholder="Ex: carlos_asw">
+                    </div>
+
                     <div class="two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="input-group">
                             <label>Idade Atual</label>
@@ -459,172 +469,150 @@
         </div>
     </div>
 
-<script>
-    // Proteções de cópia de código
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    document.onkeydown = function(e) {
-        if(e.keyCode == 123) { return false; }
-        if(e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) { return false; }
-        if(e.ctrlKey && e.keyCode == 85) { return false; }
-    };
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
-        e.preventDefault();
-
-        const formElements = Array.from(document.querySelectorAll('#recruitForm input, #recruitForm select'));
-        const index = formElements.indexOf(e.target);
-        
-        if (index > -1 && index < formElements.length - 1) {
-            formElements[index + 1].focus();
+    <script>
+        function abrirModal() { document.getElementById('modalOverlay').classList.add('active'); }
+        function fecharModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+        function fecharModalFora(e) { fecharModal(); }
+        function mostrarResultado(icone, cor, titulo, desc) {
+            const area = document.getElementById("resultArea");
+            document.getElementById("formArea").style.display = "none";
+            document.getElementById("loadingArea").style.display = "none";
+            area.style.display = "block";
+            area.innerHTML = `<i class="${icone}" style="font-size: 48px; color: ${cor}; margin-bottom: 16px;"></i><h3>${titulo}</h3><p style="color: var(--text-muted); margin-top: 8px;">${desc}</p>`;
         }
-    }
-});
-    
-    const STORAGE_KEY = "wolves_v4_cpm2"; // Atualizado para nova versão de cache
-
-    function abrirModal() {
-        document.getElementById('modalOverlay').classList.add('active');
-        document.body.style.overflow = 'hidden';
-        verificarStatusAnterior();
-    }
-
-    function fecharModal() {
-        document.getElementById('modalOverlay').classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-
-    function fecharModalFora(event) {
-        if (event.target === document.getElementById('modalOverlay')) {
-            fecharModal();
+        function mostrarTelaAguardando() {
+            mostrarResultado("ph ph-hourglass-high", "var(--status-alert)", "Inscrição Enviada!", "Sua ficha está na fila de análise da diretoria. Não feche o site, o resultado sairá aqui em tempo real.");
         }
-    }
-
-    function mostrarResultado(icone, cor, titulo, mensagem) {
-        document.getElementById('formArea').style.display = 'none';
-        document.getElementById('loadingArea').style.display = 'none';
-        
-        const resultArea = document.getElementById('resultArea');
-        resultArea.style.display = 'block';
-        resultArea.innerHTML = `
-            <i class="${icone}" style="font-size: 56px; color: ${cor}; margin-bottom: 20px; display: inline-block;"></i>
-            <h3 style="color: ${cor}; margin-bottom: 12px; font-size: 22px;">${titulo}</h3>
-            <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6;">${mensagem}</p>
-        `;
-    }
-
-    // NOVA FUNÇÃO: TELA DE AGUARDO + BOTÃO SUPORTE WHATSAPP
-    function mostrarTelaAguardando() {
-        document.getElementById('formArea').style.display = 'none';
-        document.getElementById('loadingArea').style.display = 'none';
-        
-        const resultArea = document.getElementById('resultArea');
-        resultArea.style.display = 'block';
-        
-        // Mensagem pronta para o WhatsApp
-        const textoWpp = encodeURIComponent("Olá, enviei meu formulário no portal da Asphalt Wolves e gostaria de verificar o status da minha análise.");
-        const linkWpp = `https://wa.me/5577988773155?text=${textoWpp}`;
-
-        resultArea.innerHTML = `
-            <i class="ph ph-clock-user" style="font-size: 56px; color: var(--status-alert); margin-bottom: 20px; display: inline-block;"></i>
-            <h3 style="color: var(--status-alert); margin-bottom: 12px; font-size: 22px;">Formulário em Análise</h3>
-            <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px;">Seus dados foram enviados para nossa diretoria. Por favor, entre em contato com o suporte para que um administrador analise seu perfil e libere seu acesso à comunidade.</p>
-            
-            <a href="${linkWpp}" target="_blank" class="btn-secondary" style="display: inline-flex; justify-content: center; width: 100%; border-color: var(--status-alert); color: var(--status-alert); padding: 14px; font-size: 15px;">
-                <i class="ph ph-whatsapp-logo" style="font-size: 20px;"></i> Falar com Suporte (WhatsApp)
-            </a>
-        `;
-    }
-
-    function verificarStatusAnterior() {
-        const status = localStorage.getItem(STORAGE_KEY);
-        if (status === "waiting_approval") {
-            mostrarTelaAguardando();
-        } else if (status === "rejected") {
-            mostrarResultado("ph ph-x-circle", "#ef4444", "Aplicação Recusada", "Seu perfil não atende aos requisitos corporativos atuais (Idade/Horas).");
-        } else {
-            document.getElementById('formArea').style.display = 'block';
-            document.getElementById('resultArea').style.display = 'none';
-            document.getElementById('loadingArea').style.display = 'none';
+        function checarStatusAoVivo(id) {
+            database.ref('aplicacoes/' + id).on('value', (snapshot) => {
+                const dados = snapshot.val();
+                if(dados && dados.status === 'approved') {
+                    mostrarResultado("ph ph-check-circle", "var(--status-green)", "Aprovado!", "Parabéns! Sua aplicação foi aprovada. Entre em contato com a Staff.");
+                } else if(dados && dados.status === 'rejected') {
+                    mostrarResultado("ph ph-x-circle", "#ef4444", "Recusado", "Infelizmente sua ficha foi recusada pela diretoria desta vez.");
+                }
+            });
         }
-    }
+        let timerInterval = null; // Apenas para evitar erros caso seja acionado externamente
+        const STORAGE_KEY = "asw_status";
+        const APP_ID_KEY = "asw_id";
+    </script>
 
-    document.getElementById("recruitForm").addEventListener("submit", async function(e){
-        e.preventDefault();
+   <script>
+       const firebaseConfig = {
+  apiKey: "AIzaSyDl5sbPsFkRCHht0_cfJv3OLtqzx1nlPqg",
+  authDomain: "recrutamento-asw.firebaseapp.com",
+  databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
+  projectId: "recrutamento-asw",
+  storageBucket: "recrutamento-asw.firebasestorage.app",
+  messagingSenderId: "1036486404644",
+  appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
+};
 
-        const idade = parseInt(document.getElementById("age").value);
-        const horas = parseInt(document.getElementById("hours").value);
-        const passouRequisitos = (idade >= 15 && horas >= 10);
+        // Inicializa o Firebase com verificação para evitar duplicações
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+    </script>
 
-        const webhookURL = "https://discord.com/api/webhooks/1483546848382685304/fHtmhEVcYiQt-xK01NIm7aIryXfaiMpguZI4A_jon3NlXlnrTogJRquJbisGKM-cF_8n"; 
+    <script>
+        const STORAGE_KEY = "asw_status";
+        const APP_ID_KEY = "asw_id";
 
-        document.getElementById("formArea").style.display = "none";
-        document.getElementById("loadingArea").style.display = "block";
+        // FUNÇÃO ADICIONADA: Verifica se o candidato já tem um formulário enviado ao carregar a página
+        window.addEventListener("DOMContentLoaded", () => {
+            const statusSalvo = localStorage.getItem(STORAGE_KEY);
+            const idSalvo = localStorage.getItem(APP_ID_KEY);
 
-        let ipData = "IP restrito";
-        try {
-            const resIp = await fetch('https://api.ipify.org?format=json');
-            const jsonIp = await resIp.json();
-            ipData = jsonIp.ip;
-        } catch(e) {}
+            if (statusSalvo === "waiting_approval" && idSalvo) {
+                abrirModal();
+                mostrarTelaAguardando();
+                checarStatusAoVivo(idSalvo);
+            } else if (statusSalvo === "rejected") {
+                // Se foi bloqueado temporariamente por não ter os requisitos
+                document.getElementById("recruitForm").addEventListener("click", () => {
+                     mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos.");
+                });
+            }
+        });
 
-        const dados = {
-            nome: document.getElementById("nome_game").value,
-            idade: idade,
-            horas: horas,
-            rotina: document.getElementById("rotina").value,
-            horarios: document.getElementById("horarios").value,
-            adm: document.getElementById("adm_exp").value,
-            ajuda: document.getElementById("compromisso").value
-        };
+        // Envio do Formulário
+        document.getElementById("recruitForm").addEventListener("submit", function(e){
+            e.preventDefault();
 
-        const tituloEmbed = passouRequisitos ? "🟢 NOVO REGISTRO: APLICAÇÃO ASW" : "🔴 APLICAÇÃO REJEITADA";
-        const corEmbed = passouRequisitos ? 2450411 : 15548997; 
+            const idade = parseInt(document.getElementById("age").value);
+            const horas = parseInt(document.getElementById("hours").value);
+            const passouRequisitos = (idade >= 15 && horas >= 10);
 
-        const msgDiscord = {
-            embeds: [{
-                title: tituloEmbed,
-                color: corEmbed,
-                fields: [
-                    { name: "👤 Identificação", value: dados.nome, inline: true },
-                    { name: "🎂 Idade", value: String(dados.idade), inline: true },
-                    { name: "⏱ Horas de Jogo", value: String(dados.horas), inline: true },
-                    { name: "📅 Ocupação", value: dados.rotina },
-                    { name: "⏰ Disponibilidade", value: dados.horarios },
-                    { name: "🛠 Histórico", value: dados.adm },
-                    { name: "🤝 Perfil", value: dados.ajuda },
-                    { name: "🌐 Protocolo de Segurança", value: `||${ipData}||` } 
-                ],
-                footer: { text: "Portal Corporativo ASW - Logs de Recrutamento" },
-                timestamp: new Date()
-            }]
-        };
-
-        fetch(webhookURL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(msgDiscord)
-        }).then(() => {
             if (!passouRequisitos) {
                 localStorage.setItem(STORAGE_KEY, "rejected");
-                setTimeout(() => {
-                    mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos no momento.");
-                }, 1500);
-            } else {
-                // Ao invés de mandar pro link do WPP direto, salva o status e mostra a nova tela
-                localStorage.setItem(STORAGE_KEY, "waiting_approval"); 
-                setTimeout(() => {
-                    mostrarTelaAguardando();
-                }, 1500);
+                mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos.");
+                return;
             }
-        }).catch(err => {
-            document.getElementById("loadingArea").style.display = "none";
-            document.getElementById("formArea").style.display = "block";
-            alert("Erro de conexão com o servidor. Tente novamente.");
+
+            document.getElementById("formArea").style.display = "none";
+            document.getElementById("loadingArea").style.display = "block";
+
+            // Seu Webhook do Discord ativo
+            const webhookURL = "https://discord.com/api/webhooks/1483546848382685304/fHtmhEVcYiQt-xK01NIm7aIryXfaiMpguZI4A_jon3NlXlnrTogJRquJbisGKM-cF_8n"; 
+            const linkPainelAdmin = "https://seu-site.com/admin.html"; // Altere quando hospedar o painel online
+
+            // Criando chave única na rota /aplicacoes
+            const novaAppRef = database.ref('aplicacoes').push();
+            const appId = novaAppRef.key;
+
+            const dadosForm = {
+                id: appId,
+                nome: document.getElementById("nome_game").value,
+                discord: document.getElementById("discord_tag").value,
+                idade: idade,
+                horas: horas,
+                rotina: document.getElementById("rotina").value,
+                horarios: document.getElementById("horarios").value,
+                adm: document.getElementById("adm_exp").value,
+                ajuda: document.getElementById("compromisso").value,
+                status: "pending",
+                timestamp: Date.now()
+            };
+
+            // 1. Salva os dados no banco realtime
+            novaAppRef.set(dadosForm).then(() => {
+                localStorage.setItem(STORAGE_KEY, "waiting_approval");
+                localStorage.setItem(APP_ID_KEY, appId);
+                
+                mostrarTelaAguardando();
+                checarStatusAoVivo(appId);
+
+                // 2. Dispara a notificação de alerta para a Staff no Discord
+                const alertaDiscord = {
+                    embeds: [{
+                        title: "🔔 NOVO FORMULÁRIO RECEBIDO!",
+                        color: 2450411, 
+                        description: `**${dadosForm.nome}** acabou de enviar uma ficha e está aguardando na tela de espera do site.`,
+                        fields: [
+                            { name: "💬 Discord do Candidato", value: `\`${dadosForm.discord}\``, inline: true },
+                            { name: "🎂 Idade / Horas", value: `${dadosForm.idade} anos / ${dadosForm.horas}h`, inline: true },
+                            { name: "🔗 Ação Necessária", value: `[Clique aqui para abrir o Painel Administrativo](${linkPainelAdmin})` }
+                        ],
+                        footer: { text: "Asphalt Wolves | Sistema de Triagem Realtime" },
+                        timestamp: new Date()
+                    }]
+                };
+
+                fetch(webhookURL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(alertaDiscord)
+                }).catch(err => console.log("Erro ao notificar Discord: ", err));
+
+            }).catch((err) => {
+                alert("Erro ao enviar dados para o servidor.");
+                console.error(err);
+            });
         });
-    });
-</script>
+    </script>
+
     <footer>
         <p style="text-align: center; padding: 20px; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border-color);">&copy; Asphalt Wolves | Asw 2026 Montes Developers. Todos os direitos reservados, respeito e comando.</p>
     </footer>
