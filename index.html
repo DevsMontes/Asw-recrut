@@ -486,43 +486,71 @@
         }
         const database = firebase.database();
 
+        // ==========================================
+        // MONITOR DE STATUS DO RECRUTAMENTO (REALTIME)
+        // ==========================================
         database.ref('config').on('value', (snapshot) => {
             const config = snapshot.val();
             const idSalvo = localStorage.getItem('idFichaAsphalt');
             const statusSalvo = localStorage.getItem('statusFichaAsphalt');
 
-            // Se o admin fechou o recrutamento...
+            // 1. ATUALIZAR A BADGE VISUAL DA PÁGINA INICIAL (Muda de Verde para Vermelho)
+            const badgesRecrutamento = document.querySelectorAll('span, div, p');
+            badgesRecrutamento.forEach(el => {
+                if (el.textContent.includes('RECRUTAMENTO')) {
+                    if (config && config.status === 'fechado') {
+                        el.innerHTML = "🔴 RECRUTAMENTO FECHADO";
+                        el.style.backgroundColor = "rgba(239, 68, 68, 0.1)"; 
+                        el.style.color = "#ef4444"; 
+                        el.style.borderColor = "rgba(239, 68, 68, 0.2)";
+                    } else {
+                        el.innerHTML = "🟢 RECRUTAMENTO ABERTO";
+                        el.style.backgroundColor = "rgba(16, 185, 129, 0.1)"; 
+                        el.style.color = "#10b981"; 
+                        el.style.borderColor = "rgba(16, 185, 129, 0.2)";
+                    }
+                }
+            });
+
+            // 2. CONTROLAR O BLOQUEIO DO FORMULÁRIO / MODAL
             if (config && config.status === 'fechado') {
                 console.log("🔒 Recrutamento fechado pela staff.");
 
-                // Só bloqueia a tela se ele NÃO tiver uma inscrição ativa rodando agora
+                // Se for um usuário novo ou alguém rejeitado, bloqueia a abertura do formulário
                 if (!idSalvo || statusSalvo === 'rejected') {
-                    // Executa a função do seu sistema para exibir mensagens na resultArea
-                    mostrarTelaAguardando(); 
                     
-                    // Altera os textos internos para avisar que fechou
-                    const statusIcon = document.getElementById('statusIcon');
-                    const statusTitle = document.getElementById('statusTitle');
-                    const statusDescription = document.getElementById('statusDescription');
-                    const statusSubtext = document.getElementById('statusSubtext');
-
-                    if (statusIcon) {
-                        statusIcon.className = "ph ph-lock-keyhole";
-                        statusIcon.style.color = "#ef4444";
+                    // Executa a função que abre o modal/janela de aviso
+                    if (typeof mostrarTelaAguardando === "function") {
+                        mostrarTelaAguardando(); 
                     }
-                    if (statusTitle) statusTitle.innerText = "Recrutamento Fechado";
-                    if (statusDescription) statusDescription.innerHTML = "No momento, as vagas para a <strong>Asphalt Wolves</strong> estão encerradas.";
-                    if (statusSubtext) statusSubtext.innerText = "Fique atento ao nosso Discord oficial para saber quando novas vagas serão abertas!";
+
+                    // Seleciona e altera os elementos de dentro do seu Modal (Removendo IDs fantasmas)
+                    const modalIcon = document.querySelector('.ph-hourglass, [class*="ph-hourglass"], #statusIcon');
+                    const modalTitle = document.querySelector('h2, h3, #statusTitle');
+                    const modalText = document.querySelector('p, #statusDescription');
+
+                    if (modalIcon) {
+                        // Remove a ampulheta e adiciona o cadeado de fechado
+                        modalIcon.className = "ph ph-lock-keyhole";
+                        modalIcon.style.color = "#ef4444";
+                    }
+                    if (modalTitle) {
+                        modalTitle.innerText = "Recrutamento Fechado!";
+                    }
+                    if (modalText) {
+                        modalText.innerHTML = "No momento, as vagas para a <strong>Asphalt Wolves</strong> estão encerradas.<br><br>Fique atento ao nosso Discord oficial para saber quando o próximo recrutamento começará!";
+                    }
                 }
             } else {
-                // Se o recrutamento estiver aberto e o usuário não tiver ficha pendente, libera o form
+                // Se o recrutamento abrir e ele não tiver nenhuma ficha pendente ativa, libera o formulário
                 if (!idSalvo || statusSalvo === 'rejected') {
-                    mostrarTelaInscricao();
+                    if (typeof mostrarTelaInscricao === "function") {
+                        mostrarTelaInscricao();
+                    }
                 }
             }
         });
-  </script>
-
+</script>
     <script>
         let timerInterval = null; 
         const STORAGE_KEY = "asw_status";
