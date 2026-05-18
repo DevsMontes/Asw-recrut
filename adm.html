@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Aprovação | Staff ASW</title>
+    <title>Painel de Administração | Staff ASW</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
@@ -13,13 +13,18 @@
     
     <style>
         :root {
-            --bg-dark: #0a0a0a;
-            --bg-panel: #121212;
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --border-color: #262626;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-dark: #09090b;
+            --bg-panel: #141417;
+            --bg-card: #1c1c21;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --success-hover: #059669;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --border-color: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,64 +35,127 @@
             color: var(--text-main); 
             padding: 40px 5%; 
             min-height: 100vh;
+            letter-spacing: -0.01em;
         }
 
         /* TELA DE LOGIN PRIVADA */
         .login-container {
-            max-width: 400px;
-            margin: 100px auto 0;
+            max-width: 420px;
+            margin: 80px auto 0;
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
-            padding: 32px;
-            border-radius: 8px;
-            text-align: center;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
-        .login-container h2 { font-size: 20px; margin-bottom: 8px; }
-        .login-container p { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
-        .input-group { text-align: left; margin-bottom: 16px; }
-        label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 6px; }
+        .login-container h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+        .login-container p { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
+        .input-group { text-align: left; margin-bottom: 20px; }
+        label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.05em; }
+        
         input { 
-            width: 100%; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color); 
-            background: var(--bg-dark); color: #fff; font-size: 14px; 
+            width: 100%; padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); 
+            background: var(--bg-dark); color: #fff; font-size: 14px; transition: all 0.2s;
         }
-        input:focus { outline: none; border-color: var(--primary-color); }
+        input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
 
         /* HEADER DO PAINEL */
         .panel-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 16px;
         }
-        h1 { font-size: 22px; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        h1 { font-size: 24px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 12px; }
         
         .btn-logout {
-            background: transparent; color: var(--text-muted); border: 1px solid var(--border-color);
-            padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
-            display: flex; align-items: center; gap: 6px; transition: 0.2s;
+            background: #1c1c21; color: var(--text-muted); border: 1px solid var(--border-color);
+            padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px; transition: all 0.2s;
         }
-        .btn-logout:hover { color: #ef4444; border-color: #ef4444; }
+        .btn-logout:hover { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); }
+
+        /* CONTROLE DE STATUS GLOBAL (NOVO) */
+        .status-controller-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            padding: 20px 24px;
+            border-radius: 10px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .status-info h4 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .status-info p { font-size: 13px; color: var(--text-muted); }
+        
+        .select-wrapper { position: relative; }
+        .status-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background: var(--bg-dark);
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 12px 40px 12px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 220px;
+        }
+        .status-select:focus { border-color: var(--primary-color); outline: none; }
+        .select-wrapper::after {
+            content: "\e292"; /* Código Phosphor para a seta */
+            font-family: "Phosphor";
+            position: absolute; right: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            font-size: 16px;
+        }
 
         /* GRID E CARDS DE CANDIDATOS */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .card { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 24px; border-radius: 8px; position: relative;}
-        .card h3 { font-size: 18px; margin-bottom: 12px; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
-        .card p { font-size: 13px; color: var(--text-muted); margin: 6px 0; line-height: 1.4; }
-        .card strong { color: #fff; font-weight: 600; }
-        .card .id-badge { font-family: monospace; font-size: 11px; background: #1c1c1e; color: #38bdf8; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 10px; border: 1px solid #2d2d30;}
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
+        .card { 
+            background: var(--bg-panel); border: 1px solid var(--border-color); padding: 28px; 
+            border-radius: 10px; position: relative; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
+        .card h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: #fff; }
         
-        .actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 10px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
-        .btn-primary { background: var(--primary-color); color: #fff; width: 100%; padding: 12px; margin-top: 8px;}
+        .card .id-badge { 
+            font-family: monospace; font-size: 11px; background: rgba(56, 189, 248, 0.08); 
+            color: #38bdf8; padding: 4px 8px; border-radius: 4px; display: inline-block; 
+            margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.15); width: fit-content;
+        }
+        
+        .card-info-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; flex-grow: 1; }
+        .info-item { display: flex; flex-direction: column; border-bottom: 1px solid #1f1f23; padding-bottom: 8px; }
+        .info-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.02em; }
+        .info-value { font-size: 14px; color: #e4e4e7; line-height: 1.5; }
+        .info-value code { background: var(--bg-dark); padding: 2px 6px; border-radius: 4px; border: 1px solid #27272a; font-size: 13px; color: #f4f4f5; }
+
+        .actions { display: flex; gap: 12px; margin-top: auto; }
+        .btn { 
+            flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; 
+            cursor: pointer; font-size: 14px; display: flex; align-items: center; 
+            justify-content: center; gap: 8px; transition: all 0.2s; 
+        }
+        .btn-primary { background: var(--primary-color); color: #fff; width: 100%; margin-top: 8px;}
         .btn-primary:hover { background: var(--primary-hover); }
-        .btn-approve { background: #16a34a; color: #fff; }
-        .btn-approve:hover { background: #15803d; }
-        .btn-reject { background: #dc2626; color: #fff; }
-        .btn-reject:hover { background: #b91c1c; }
         
-        .empty { color: var(--text-muted); font-size: 14px; grid-column: 1 / -1; text-align: center; padding: 40px 0; }
+        .btn-approve { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .btn-approve:hover { background: var(--success); color: #fff; }
+        
+        .btn-reject { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .btn-reject:hover { background: var(--danger); color: #fff; }
+        
+        .empty { color: var(--text-muted); font-size: 15px; grid-column: 1 / -1; text-align: center; padding: 60px 0; }
         
         #adminSection { display: none; }
     </style>
@@ -112,8 +180,21 @@
 
     <div id="adminSection">
         <div class="panel-header">
-            <h1>🐺 Pedidos Pendentes de Recrutamento</h1>
+            <h1>🐺 Painel Administrativo | ASW</h1>
             <button class="btn-logout" onclick="fazerLogout()"><i class="ph ph-sign-out"></i> Desconectar</button>
+        </div>
+        
+        <div class="status-controller-box">
+            <div class="status-info">
+                <h4>Status de Admissões</h4>
+                <p>Controle se o formulário público do site estará visível para novos candidatos.</p>
+            </div>
+            <div class="select-wrapper">
+                <select id="statusRecrutamento" class="status-select">
+                    <option value="aberto">🟢 Recrutamento Aberto</option>
+                    <option value="fechado">🔴 Recrutamento Fechado</option>
+                </select>
+            </div>
         </div>
         
         <div class="grid" id="containerPedidos">
@@ -132,14 +213,13 @@ const firebaseConfig = {
   appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
 };
 
-    // Inicialização estruturada do Firebase Compat
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
     const database = firebase.database();
     const auth = firebase.auth();
 
-    // Monitor do estado de Login (Gerencia visibilidade das telas)
+    // Monitor do estado de Login
     auth.onAuthStateChanged((user) => {
         const loginSection = document.getElementById('loginSection');
         const adminSection = document.getElementById('adminSection');
@@ -149,6 +229,7 @@ const firebaseConfig = {
             loginSection.style.display = 'none';
             adminSection.style.display = 'block';
             inicializarEscutaDados();
+            inicializarControleStatus(); // Inicializa o controle do botão liga/desliga
         } else {
             console.log("🔓 [ADMIN] Nenhuma sessão ativa encontrada.");
             loginSection.style.display = 'block';
@@ -186,7 +267,34 @@ const firebaseConfig = {
         });
     }
 
-    // Puxa e escuta aplicações pendentes ao vivo do Realtime Database
+    // LÓGICA DO SELETOR DE STATUS DO RECRUTAMENTO (NOVO)
+    function inicializarControleStatus() {
+        const configRef = database.ref('config');
+
+        // Sincroniza visualmente o seletor com o estado atual salvo no banco
+        configRef.on('value', (snapshot) => {
+            const config = snapshot.val();
+            if (config && config.status) {
+                document.getElementById('statusRecrutamento').value = config.status;
+            }
+        });
+
+        // Altera o status global no banco quando o admin mudar a opção
+        document.getElementById('statusRecrutamento').addEventListener('change', (e) => {
+            const novoStatus = e.target.value;
+            
+            configRef.update({ status: novoStatus })
+            .then(() => {
+                console.log(`Status de recrutamento alterado para: ${novoStatus}`);
+            })
+            .catch((err) => {
+                console.error("Erro ao atualizar status global:", err);
+                alert("Erro ao salvar alteração. Verifique suas permissões.");
+            });
+        });
+    }
+
+    // Puxa e escuta aplicações pendentes ao vivo
     function inicializarEscutaDados() {
         console.log("📡 [ADMIN] Conectando ao nó 'aplicacoes' filtrando por 'pending'...");
         
@@ -195,14 +303,13 @@ const firebaseConfig = {
             container.innerHTML = "";
             
             const dados = snapshot.val();
-            console.log("📥 [ADMIN] Dados brutos recebidos do Firebase:", dados);
+            console.log("📥 [ADMIN] Dados recebidos:", dados);
 
             if (!dados) {
                 container.innerHTML = '<p class="empty">Nenhum formulário aguardando resposta no momento.</p>';
                 return;
             }
 
-            // Mapeia e organiza os itens renderizados na tela
             Object.keys(dados).forEach(id => {
                 const app = dados[id];
                 const card = document.createElement('div');
@@ -210,15 +317,37 @@ const firebaseConfig = {
                 card.innerHTML = `
                     <h3>${app.nome || 'Sem Nome'}</h3>
                     <div class="id-badge">ID: ${id}</div>
-                    <p><strong>Discord ID:</strong> <code>${app.discord || 'Não informado'}</code></p>
-                    <p><strong>Idade:</strong> ${app.idade || '--'} anos | <strong>Horas:</strong> ${app.horas || '0'}h</p>
-                    <p><strong>Rotina Diária:</strong> ${app.rotina || 'Não informada'}</p>
-                    <p><strong>Horários Livres:</strong> ${app.horarios || 'Não informados'}</p>
-                    <p><strong>Histórico / Exp:</strong> ${app.adm || 'Nenhum'}</p>
-                    <p><strong>Intenção Liderança:</strong> ${app.ajuda || 'Não'}</p>
+                    
+                    <div class="card-info-list">
+                        <div class="info-item">
+                            <span class="info-label">💬 Usuário Discord</span>
+                            <span class="info-value"><code>${app.discord || 'Não informado'}</code></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">🎂 Idade & Horas de Jogo</span>
+                            <span class="info-value">${app.idade || '--'} anos / <strong>${app.horas || '0'}h</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">📅 Rotina Diária</span>
+                            <span class="info-value">${app.rotina || 'Não informada'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">⏰ Horários de Acesso</span>
+                            <span class="info-value">${app.horarios || 'Não informados'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">🛠️ Histórico Administrativo / Experiência</span>
+                            <span class="info-value">${app.adm || 'Nenhum'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">🚀 Intenção de Liderança</span>
+                            <span class="info-value">${app.ajuda || 'Não'}</span>
+                        </div>
+                    </div>
+                    
                     <div class="actions">
-                        <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph-bold ph-check"></i> Aceitar</button>
-                        <button class="btn btn-reject" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'rejected')"><i class="ph-bold ph-x"></i> Recusar</button>
+                        <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph ph-check"></i> Aceitar</button>
+                        <button class="btn btn-reject" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'rejected')"><i class="ph ph-x"></i> Recusar</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -226,7 +355,7 @@ const firebaseConfig = {
         });
     }
 
-    // Altera o status da ficha com caixa de verificação de segurança
+    // Altera o status da ficha
     function decidir(id, nomeCandidato, novoStatus) {
         const acaoTexto = novoStatus === 'approved' ? 'APROVAR' : 'RECUSAR';
         const confirmar = confirm(`Tem certeza que deseja ${acaoTexto} a ficha de ${nomeCandidato}?`);
@@ -237,9 +366,9 @@ const firebaseConfig = {
 
         database.ref('aplicacoes/' + id).update({ status: novoStatus })
         .then(() => {
-            console.log(`✅ [SUCESSO] Pedido ${id} alterado com sucesso.`);
+            console.log(`✅ [SUCESSO] Pedido ${id} alterado.`);
         }).catch(err => {
-            alert("Erro ao atualizar dados: Verifique as regras de segurança ou regras de índice (.indexOn) do Firebase.");
+            alert("Erro ao atualizar dados. Verifique o console.");
             console.error(err);
         });
     }
