@@ -370,7 +370,7 @@
             
             <details class="faq-item">
                 <summary class="faq-summary">Ainda não tenho 10 horas de jogo, posso me inscrever? <i class="ph ph-caret-down"></i></summary>
-                <div class="faq-content">No momento, nosso sistema blocoia automaticamente registros que não atingem os requisitos mínimos de horas ou idade. Isso garante que todos os membros tenham o mesmo nível de imersão nos eventos. Recomendamos jogar mais um pouco e retornar depois!</div>
+                <div class="faq-content">No momento, nosso sistema bloqueia automaticamente registros que não atingem os requisitos mínimos de horas ou idade. Isso garante que todos os membros tenham o mesmo nível de imersão nos eventos. Recomendamos jogar mais um pouco e retornar depois!</div>
             </details>
 
             <details class="faq-item">
@@ -491,7 +491,6 @@
             `;
         }
         
-        // MODIFICADO: Incluído botão dinâmico para suporte via WhatsApp na tela de espera
         function mostrarTelaAguardando() {
             mostrarResultado(
                 "ph ph-hourglass-high", 
@@ -512,26 +511,39 @@
                 const dados = snapshot.val();
                 if(dados && dados.status === 'approved') {
                     mostrarResultado(
- "ph ph-check-circle", 
-"var(--status-green)", 
-"Aprovado!", 
-`Parabéns! Sua aplicação foi aprovada pela Admin da Asphalt Wolves.<br><br>
-Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:<br><br>
-<a href="https://chat.whatsapp.com/BlfeXFuGZ6N3PqbWtOdedY" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; background-color: #22c55e; border-color: #22c55e; color: #ffffff;">
-    <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (WhatsApp)
-</a>`
-);
+                        "ph ph-check-circle", 
+                        "var(--status-green)", 
+                        "Aprovado!", 
+                        `Parabéns! Sua aplicação foi aprovada pela Admin da Asphalt Wolves.<br><br>
+                        Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:<br><br>
+                        <a href="https://chat.whatsapp.com/BlfeXFuGZ6N3PqbWtOdedY" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; background-color: #22c55e; border-color: #22c55e; color: #ffffff;">
+                            <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (WhatsApp)
+                        </a>`
+                    );
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.removeItem(APP_ID_KEY);
                 } else if(dados && dados.status === 'rejected') {
-                    mostrarResultado("ph ph-x-circle", "#ef4444", "Recusado", "Infelizmente sua ficha foi recusada pela nossa diretoria desta vez. Agradecemos o interesse.");
+                    mostrarResultado(
+                        "ph ph-x-circle", 
+                        "#ef4444", 
+                        "Inscrição Recusada", 
+                        `Infelizmente, sua aplicação não foi aprovada pela diretoria do Asphalt Wolves neste momento.<br><br>
+                        Agradecemos o seu interesse em fazer parte da nossa comunidade. Você poderá tentar enviar um novo formulário em um próximo recrutamento.<br><br>
+                        <a href="https://wa.me/5577988773155?text=Olá!%20Minha%20inscrição%20foi%20recusada%20no%20portal%20Asphalt%20Wolves%20e%20gostaria%20de%20saber%20o%20motivo." 
+                           target="_blank" 
+                           class="btn-secondary" 
+                           style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; gap: 8px; border-color: #ef4444; color: #ef4444; margin-top: 10px; font-weight: 600;">
+                            <i class="ph ph-question" style="font-size:18px;"></i> Tirar Dúvidas com o Suporte
+                        </a>`
+                    );
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(APP_ID_KEY);
                 }
             });
         }
     </script>
 
     <script>
-        // CORRIGIDO: Chave apiKey alterada de 'cfJv...' para 'cFJv...' para alinhar-se perfeitamente com o Painel Admin
         const firebaseConfig = {
             apiKey: "AIzaSyDl5sbPsFkRCHht0_cFJv3OLTqzx1nlPqg",
             authDomain: "recrutamento-asw.firebaseapp.com",
