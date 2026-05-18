@@ -576,12 +576,13 @@
         const database = firebase.database();
     </script>
 
-    <script>
+<script>
         window.addEventListener("DOMContentLoaded", () => {
             const statusSalvo = localStorage.getItem(STORAGE_KEY);
             const idSalvo = localStorage.getItem(APP_ID_KEY);
 
-            if (statusSalvo === "waiting_approval" && idSalvo) {
+            // CORREÇÃO: Ajustado para verificar "aguardando" e abrir o modal se necessário
+            if (statusSalvo === "aguardando" && idSalvo) {
                 abrirModal();
                 mostrarTelaAguardando();
                 checarStatusAoVivo(idSalvo);
@@ -630,9 +631,12 @@
             };
 
             novaAppRef.set(dadosForm).then(() => {
-                localStorage.setItem(STORAGE_KEY, "waiting_approval");
+                // CORREÇÃO: Salvando como "aguardando" para sincronizar perfeitamente
+                localStorage.setItem(STORAGE_KEY, "aguardando");
                 localStorage.setItem(APP_ID_KEY, appId);
                 
+                // Abre o modal e põe na tela de espera
+                abrirModal();
                 mostrarTelaAguardando();
                 checarStatusAoVivo(appId);
 
