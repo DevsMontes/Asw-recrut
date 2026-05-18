@@ -194,9 +194,10 @@
 
         /* FAQ ACCORDION */
         .faq-section { margin-bottom: 80px; }
+        .faq-section details { margin-bottom: 12px; }
         .faq-item { 
             background: var(--bg-panel); border: 1px solid var(--border-color); 
-            border-radius: 6px; margin-bottom: 12px; overflow: hidden; 
+            border-radius: 6px; overflow: hidden; 
         }
         .faq-summary { 
             padding: 18px 20px; font-weight: 600; cursor: pointer; display: flex; 
@@ -369,7 +370,7 @@
             
             <details class="faq-item">
                 <summary class="faq-summary">Ainda não tenho 10 horas de jogo, posso me inscrever? <i class="ph ph-caret-down"></i></summary>
-                <div class="faq-content">No momento, nosso sistema bloqueia automaticamente registros que não atingem os requisitos mínimos de horas ou idade. Isso garante que todos os membros tenham o mesmo nível de imersão nos eventos. Recomendamos jogar mais um pouco e retornar depois!</div>
+                <div class="faq-content">No momento, nosso sistema blocoia automaticamente registros que não atingem os requisitos mínimos de horas ou idade. Isso garante que todos os membros tenham o mesmo nível de imersão nos eventos. Recomendamos jogar mais um pouco e retornar depois!</div>
             </details>
 
             <details class="faq-item">
@@ -490,15 +491,26 @@
             `;
         }
         
+        // MODIFICADO: Incluído botão dinâmico para suporte via WhatsApp na tela de espera
         function mostrarTelaAguardando() {
-            mostrarResultado("ph ph-hourglass-high", "var(--status-alert)", "Inscrição Enviada!", "Sua ficha está na fila de análise da diretoria. Não feche o site, o resultado sairá aqui em tempo real.");
+            mostrarResultado(
+                "ph ph-hourglass-high", 
+                "var(--status-alert)", 
+                "Inscrição Enviada!", 
+                `Sua ficha está na fila de análise da diretoria. Não feche o site, o resultado sairá aqui em tempo real.<br><br>
+                <a href="https://wa.me/5577988773155?text=Olá!%20Enviei%20minha%20inscrição%20no%20portal%20Asphalt%20Wolves%20e%20estou%20na%20tela%20de%20espera." 
+                   target="_blank" 
+                   class="btn-secondary" 
+                   style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; gap: 8px; border-color: #22c55e; color: #22c55e; margin-top: 10px; font-weight: 600;">
+                    <i class="ph ph-whatsapp-logo" style="font-size:18px;"></i> Falar com o Suporte (WhatsApp)
+                </a>`
+            );
         }
         
         function checarStatusAoVivo(id) {
             database.ref('aplicacoes/' + id).on('value', (snapshot) => {
                 const dados = snapshot.val();
                 if(dados && dados.status === 'approved') {
-                    // RESOLVIDO: Adicionado redirecionamento direto por botão estilizado para a comunidade
                     mostrarResultado(
                         "ph ph-check-circle", 
                         "var(--status-green)", 
@@ -509,7 +521,6 @@
                             <i class="ph ph-discord-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (Discord)
                         </a>`
                     );
-                    // Opcional: Remove os dados locais para permitir novos envios futuros
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.removeItem(APP_ID_KEY);
                 } else if(dados && dados.status === 'rejected') {
@@ -520,8 +531,9 @@
     </script>
 
     <script>
+        // CORRIGIDO: Chave apiKey alterada de 'cfJv...' para 'cFJv...' para alinhar-se perfeitamente com o Painel Admin
         const firebaseConfig = {
-            apiKey: "AIzaSyDl5sbPsFkRCHht0_cfJv3OLtqzx1nlPqg",
+            apiKey: "AIzaSyDl5sbPsFkRCHht0_cFJv3OLTqzx1nlPqg",
             authDomain: "recrutamento-asw.firebaseapp.com",
             databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
             projectId: "recrutamento-asw",
@@ -537,8 +549,6 @@
     </script>
 
     <script>
-        // RESOLVIDO: Linhas duplicadas de STORAGE_KEY retiradas para sanar o erro de sintaxe do navegador!
-
         window.addEventListener("DOMContentLoaded", () => {
             const statusSalvo = localStorage.getItem(STORAGE_KEY);
             const idSalvo = localStorage.getItem(APP_ID_KEY);
