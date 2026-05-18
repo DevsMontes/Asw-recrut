@@ -471,7 +471,7 @@
     </div>
 
     <script>
-        let timerInterval = null; 
+     let timerInterval = null; 
         const STORAGE_KEY = "asw_status";
         const APP_ID_KEY = "asw_id";
 
@@ -509,7 +509,11 @@
         function checarStatusAoVivo(id) {
             database.ref('aplicacoes/' + id).on('value', (snapshot) => {
                 const dados = snapshot.val();
-                if(dados && dados.status === 'approved') {
+                
+                if (dados && dados.status === 'approved') {
+                    // Força a abertura do modal caso a página tenha sido recarregada
+                    abrirModal(); 
+                    
                     mostrarResultado(
                         "ph ph-check-circle", 
                         "var(--status-green)", 
@@ -520,9 +524,17 @@
                             <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (WhatsApp)
                         </a>`
                     );
+                    
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.removeItem(APP_ID_KEY);
-                } else if(dados && dados.status === 'rejected') {
+                    
+                    // Desconecta o escutador em tempo real do Firebase
+                    database.ref('aplicacoes/' + id).off();
+                    
+                } else if (dados && dados.status === 'rejected') {
+                    // Força a abertura do modal caso a página tenha sido recarregada
+                    abrirModal(); 
+                    
                     mostrarResultado(
                         "ph ph-x-circle", 
                         "#ef4444", 
@@ -536,8 +548,12 @@
                             <i class="ph ph-question" style="font-size:18px;"></i> Tirar Dúvidas com o Suporte
                         </a>`
                     );
+                    
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.removeItem(APP_ID_KEY);
+                    
+                    // Desconecta o escutador em tempo real do Firebase
+                    database.ref('aplicacoes/' + id).off();
                 }
             });
         }
