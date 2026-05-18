@@ -470,7 +470,7 @@
         </div>
     </div>
 
-    <script>
+  <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDl5sbPsFkRCHht0_cFJv3OLTqzx1nlPqg",
             authDomain: "recrutamento-asw.firebaseapp.com",
@@ -485,7 +485,43 @@
             firebase.initializeApp(firebaseConfig);
         }
         const database = firebase.database();
-    </script>
+
+        database.ref('config').on('value', (snapshot) => {
+            const config = snapshot.val();
+            const idSalvo = localStorage.getItem('idFichaAsphalt');
+            const statusSalvo = localStorage.getItem('statusFichaAsphalt');
+
+            // Se o admin fechou o recrutamento...
+            if (config && config.status === 'fechado') {
+                console.log("🔒 Recrutamento fechado pela staff.");
+
+                // Só bloqueia a tela se ele NÃO tiver uma inscrição ativa rodando agora
+                if (!idSalvo || statusSalvo === 'rejected') {
+                    // Executa a função do seu sistema para exibir mensagens na resultArea
+                    mostrarTelaAguardando(); 
+                    
+                    // Altera os textos internos para avisar que fechou
+                    const statusIcon = document.getElementById('statusIcon');
+                    const statusTitle = document.getElementById('statusTitle');
+                    const statusDescription = document.getElementById('statusDescription');
+                    const statusSubtext = document.getElementById('statusSubtext');
+
+                    if (statusIcon) {
+                        statusIcon.className = "ph ph-lock-keyhole";
+                        statusIcon.style.color = "#ef4444";
+                    }
+                    if (statusTitle) statusTitle.innerText = "Recrutamento Fechado";
+                    if (statusDescription) statusDescription.innerHTML = "No momento, as vagas para a <strong>Asphalt Wolves</strong> estão encerradas.";
+                    if (statusSubtext) statusSubtext.innerText = "Fique atento ao nosso Discord oficial para saber quando novas vagas serão abertas!";
+                }
+            } else {
+                // Se o recrutamento estiver aberto e o usuário não tiver ficha pendente, libera o form
+                if (!idSalvo || statusSalvo === 'rejected') {
+                    mostrarTelaInscricao();
+                }
+            }
+        });
+  </script>
 
     <script>
         let timerInterval = null; 
