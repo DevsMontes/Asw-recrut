@@ -76,6 +76,7 @@
         .card h3 { font-size: 18px; margin-bottom: 12px; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .card p { font-size: 13px; color: var(--text-muted); margin: 6px 0; line-height: 1.4; }
         .card strong { color: #fff; font-weight: 600; }
+        .card .id-badge { font-family: monospace; font-size: 11px; background: #1c1c1e; color: #38bdf8; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 10px; border: 1px solid #2d2d30;}
         
         .actions { display: flex; gap: 10px; margin-top: 20px; }
         .btn { flex: 1; padding: 10px; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; }
@@ -131,25 +132,25 @@ const firebaseConfig = {
   appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
 };
 
-    // Inicialização correta usando a estrutura Compat
+    // Inicialização estruturada do Firebase Compat
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
     const database = firebase.database();
     const auth = firebase.auth();
 
-    // Monitor do estado de Login (Gerencia as telas automaticamente)
+    // Monitor do estado de Login (Gerencia visibilidade das telas)
     auth.onAuthStateChanged((user) => {
         const loginSection = document.getElementById('loginSection');
         const adminSection = document.getElementById('adminSection');
 
         if (user) {
-            // Se logado: oculta login e mostra o painel
+            console.log("🔒 [ADMIN] Sessão ativa detectada:", user.email);
             loginSection.style.display = 'none';
             adminSection.style.display = 'block';
             inicializarEscutaDados();
         } else {
-            // Se deslogado: mostra login e oculta o painel
+            console.log("🔓 [ADMIN] Nenhuma sessão ativa encontrada.");
             loginSection.style.display = 'block';
             adminSection.style.display = 'none';
         }
@@ -159,7 +160,6 @@ const firebaseConfig = {
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // trim() remove espaços extras e toLowerCase() evita problemas com maiúsculas no início do e-mail
         const email = document.getElementById('loginEmail').value.trim().toLowerCase();
         const pass = document.getElementById('loginPassword').value;
 
@@ -168,7 +168,6 @@ const firebaseConfig = {
             console.log("Conectado com sucesso como:", userCredential.user.email);
         })
         .catch(err => {
-            // Alerta amigável traduzido para os erros comuns do Firebase
             if (err.code === 'auth/wrong-password') {
                 alert("Senha incorreta! Digite novamente.");
             } else if (err.code === 'auth/user-not-found') {
@@ -183,28 +182,34 @@ const firebaseConfig = {
     // Função para desconectar do painel
     function fazerLogout() {
         auth.signOut().then(() => {
-            window.location.reload(); // Recarrega para limpar resquícios da memória
+            window.location.reload();
         });
     }
 
-    // Puxa e escuta aplicações pendentes ao vivo do banco
+    // Puxa e escuta aplicações pendentes ao vivo do Realtime Database
     function inicializarEscutaDados() {
+        console.log("📡 [ADMIN] Conectando ao nó 'aplicacoes' filtrando por 'pending'...");
+        
         database.ref('aplicacoes').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
             const container = document.getElementById('containerPedidos');
             container.innerHTML = "";
             
             const dados = snapshot.val();
+            console.log("📥 [ADMIN] Dados brutos recebidos do Firebase:", dados);
+
             if (!dados) {
                 container.innerHTML = '<p class="empty">Nenhum formulário aguardando resposta no momento.</p>';
                 return;
             }
 
+            // Mapeia e organiza os itens renderizados na tela
             Object.keys(dados).forEach(id => {
                 const app = dados[id];
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
                     <h3>${app.nome || 'Sem Nome'}</h3>
+                    <div class="id-badge">ID: ${id}</div>
                     <p><strong>Discord ID:</strong> <code>${app.discord || 'Não informado'}</code></p>
                     <p><strong>Idade:</strong> ${app.idade || '--'} anos | <strong>Horas:</strong> ${app.horas || '0'}h</p>
                     <p><strong>Rotina Diária:</strong> ${app.rotina || 'Não informada'}</p>
@@ -212,8 +217,8 @@ const firebaseConfig = {
                     <p><strong>Histórico / Exp:</strong> ${app.adm || 'Nenhum'}</p>
                     <p><strong>Intenção Liderança:</strong> ${app.ajuda || 'Não'}</p>
                     <div class="actions">
-                        <button class="btn btn-approve" onclick="decidir('${id}', 'approved')"><i class="ph-bold ph-check"></i> Aceitar</button>
-                        <button class="btn btn-reject" onclick="decidir('${id}', 'rejected')"><i class="ph-bold ph-x"></i> Recusar</button>
+                        <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph-bold ph-check"></i> Aceitar</button>
+                        <button class="btn btn-reject" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'rejected')"><i class="ph-bold ph-x"></i> Recusar</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -221,13 +226,20 @@ const firebaseConfig = {
         });
     }
 
-    // Altera o status da ficha
-    function decidir(id, status) {
-        database.ref('aplicacoes/' + id).update({ status: status })
+    // Altera o status da ficha com caixa de verificação de segurança
+    function decidir(id, nomeCandidato, novoStatus) {
+        const acaoTexto = novoStatus === 'approved' ? 'APROVAR' : 'RECUSAR';
+        const confirmar = confirm(`Tem certeza que deseja ${acaoTexto} a ficha de ${nomeCandidato}?`);
+        
+        if (!confirmar) return;
+
+        console.log(`⏳ [ADMIN] Atualizando ID ${id} para status: ${novoStatus}`);
+
+        database.ref('aplicacoes/' + id).update({ status: novoStatus })
         .then(() => {
-            console.log(`Pedido ${id} atualizado para ${status}`);
+            console.log(`✅ [SUCESSO] Pedido ${id} alterado com sucesso.`);
         }).catch(err => {
-            alert("Erro ao atualizar dados: Verifique as regras de segurança do banco.");
+            alert("Erro ao atualizar dados: Verifique as regras de segurança ou regras de índice (.indexOn) do Firebase.");
             console.error(err);
         });
     }
