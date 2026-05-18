@@ -577,11 +577,37 @@
     </script>
 
 <script>
-        window.addEventListener("DOMContentLoaded", () => {
-            const statusSalvo = localStorage.getItem(STORAGE_KEY);
-            const idSalvo = localStorage.getItem(APP_ID_KEY);
+        // Criando um substituto na memória caso o localStorage esteja bloqueado pelo navegador
+        let memoriaStatus = null;
+        let memoriaId = null;
 
-            // CORREÇÃO: Ajustado para verificar "aguardando" e abrir o modal se necessário
+        function safeSetItem(key, val) {
+            try {
+                localStorage.setItem(key, val);
+            } catch(e) {
+                console.warn("localStorage bloqueado pelo navegador. Usando memória temporária.");
+            }
+            if(key === STORAGE_KEY) memoriaStatus = val;
+            if(key === APP_ID_KEY) memoriaId = val;
+        }
+
+        function safeGetItem(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch(e) {
+                if(key === STORAGE_KEY) return memoriaStatus;
+                if(key === APP_ID_KEY) return memoriaId;
+            }
+            return null;
+        }
+
+        // ==========================================
+        // 1. EVENTO QUE CARREGA QUANDO A PÁGINA ABRE
+        // ==========================================
+        window.addEventListener("DOMContentLoaded", () => {
+            const statusSalvo = safeGetItem(STORAGE_KEY);
+            const idSalvo = safeGetItem(APP_ID_KEY);
+
             if (statusSalvo === "aguardando" && idSalvo) {
                 abrirModal();
                 mostrarTelaAguardando();
@@ -594,6 +620,9 @@
             }
         });
 
+        // ==========================================
+        // 2. EVENTO DE ENVIO DO FORMULÁRIO
+        // ==========================================
         document.getElementById("recruitForm").addEventListener("submit", function(e){
             e.preventDefault();
 
@@ -602,7 +631,7 @@
             const passouRequisitos = (idade >= 15 && horas >= 10);
 
             if (!passouRequisitos) {
-                localStorage.setItem(STORAGE_KEY, "rejected");
+                safeSetItem(STORAGE_KEY, "rejected");
                 mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos.");
                 return;
             }
@@ -631,11 +660,9 @@
             };
 
             novaAppRef.set(dadosForm).then(() => {
-                // CORREÇÃO: Salvando como "aguardando" para sincronizar perfeitamente
-                localStorage.setItem(STORAGE_KEY, "aguardando");
-                localStorage.setItem(APP_ID_KEY, appId);
+                safeSetItem(STORAGE_KEY, "aguardando");
+                safeSetItem(APP_ID_KEY, appId);
                 
-                // Abre o modal e põe na tela de espera
                 abrirModal();
                 mostrarTelaAguardando();
                 checarStatusAoVivo(appId);
