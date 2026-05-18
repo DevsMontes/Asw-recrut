@@ -577,32 +577,106 @@
     </script>
 
 <script>
-        // Criando um substituto na memória caso o localStorage esteja bloqueado pelo navegador
+        // Sistema de Memória Reserva
         let memoriaStatus = null;
         let memoriaId = null;
 
         function safeSetItem(key, val) {
-            try {
-                localStorage.setItem(key, val);
-            } catch(e) {
-                console.warn("localStorage bloqueado pelo navegador. Usando memória temporária.");
-            }
+            try { localStorage.setItem(key, val); } catch(e) {}
             if(key === STORAGE_KEY) memoriaStatus = val;
             if(key === APP_ID_KEY) memoriaId = val;
         }
 
         function safeGetItem(key) {
-            try {
-                return localStorage.getItem(key);
-            } catch(e) {
-                if(key === STORAGE_KEY) return memoriaStatus;
-                if(key === APP_ID_KEY) return memoriaId;
-            }
+            try { return localStorage.getItem(key); } catch(e) {}
+            if(key === STORAGE_KEY) return memoriaStatus;
+            if(key === APP_ID_KEY) return memoriaId;
             return null;
         }
 
+        // ========================================================
+        // FUNÇÃO DE ESCUTA EM TEMPO REAL (TOTALMENTE À PROVA DE ERROS)
+        // ========================================================
+        function checarStatusAoVivo(id) {
+            console.log("🟢 [DEBUG] checarStatusAoVivo foi chamada para o ID:", id);
+            
+            // AUTOVERIFICAÇÃO DA VARIÁVEL DATABASE
+            let fbDatabase;
+            if (typeof database !== 'undefined') {
+                fbDatabase = database;
+            } else if (typeof firebase !== 'undefined' && firebase.database) {
+                fbDatabase = firebase.database();
+            } else {
+                console.error("🔴 [ERRO CRÍTICO] O Firebase Realtime Database não foi encontrado ou não foi inicializado corretamente antes deste script!");
+                alert("Erro de conexão interna: O Firebase não respondeu.");
+                return;
+            }
+
+            console.log("📡 [DEBUG] Conectando ao caminho: aplicacoes/" + id);
+
+            fbDatabase.ref('aplicacoes/' + id).on('value', (snapshot) => {
+                const dados = snapshot.val();
+                console.log("📥 [DEBUG] Dados recebidos do Firebase em tempo real:", dados);
+                
+                if (!dados) {
+                    console.warn("⚠️ [AVISO] Nenhum dado encontrado no Firebase para o ID:", id);
+                    return;
+                }
+
+                if (dados.status === 'approved') {
+                    console.log("🏆 [STATUS] Aplicação APROVADA! Modificando a tela...");
+                    abrirModal(); 
+                    
+                    const modalOverlay = document.getElementById('modalOverlay');
+                    if (modalOverlay) {
+                        modalOverlay.innerHTML = `
+                            <div class="modal-content" style="text-align: center; padding: 30px; background: #1e1e2e; border-radius: 12px; max-width: 450px; margin: auto;">
+                                <i class="ph ph-check-circle" style="font-size: 54px; color: #22c55e; margin-bottom: 16px;"></i>
+                                <h3 style="font-size: 24px; margin-bottom: 15px; color: #ffffff;">Aprovado!</h3>
+                                <div style="color: #94a3b8; margin-top: 12px; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+                                    Parabéns! Sua aplicação foi aprovada pela Admin da Asphalt Wolves.<br><br>
+                                    Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:
+                                </div>
+                                <a href="https://chat.whatsapp.com/BlfeXFuGZ6N3PqbWtOdedY" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; background-color: #22c55e; border-color: #22c55e; color: #ffffff; border-radius: 6px; font-weight: bold; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);">
+                                    <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (WhatsApp)
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    fbDatabase.ref('aplicacoes/' + id).off();
+                    
+                } else if (dados.status === 'rejected') {
+                    console.log("❌ [STATUS] Aplicação RECUSADA! Modificando a tela...");
+                    abrirModal(); 
+                    
+                    const modalOverlay = document.getElementById('modalOverlay');
+                    if (modalOverlay) {
+                        modalOverlay.innerHTML = `
+                            <div class="modal-content" style="text-align: center; padding: 30px; background: #1e1e2e; border-radius: 12px; max-width: 450px; margin: auto;">
+                                <i class="ph ph-x-circle" style="font-size: 54px; color: #ef4444; margin-bottom: 16px;"></i>
+                                <h3 style="font-size: 24px; margin-bottom: 15px; color: #ffffff;">Inscrição Recusada</h3>
+                                <div style="color: #94a3b8; margin-top: 12px; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+                                    Infelizmente, sua aplicação não foi aprovada pela diretoria do Asphalt Wolves neste momento.<br><br>
+                                    Agradecemos o seu interesse. Você poderá tentar enviar um novo formulário em um próximo recrutamento.
+                                </div>
+                                <a href="https://wa.me/5577988773155?text=Olá!%20Minha%20inscrição%20foi%20recusada%20no%20portal%20Asphalt%20Wolves" 
+                                   target="_blank" 
+                                   class="btn-secondary" 
+                                   style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; gap: 8px; border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; font-weight: 600;">
+                                    <i class="ph ph-question" style="font-size:18px;"></i> Tirar Dúvidas com o Suporte
+                                </a>
+                            </div>
+                        `;
+                    }
+                    
+                    fbDatabase.ref('aplicacoes/' + id).off();
+                }
+            });
+        }
+
         // ==========================================
-        // 1. EVENTO QUE CARREGA QUANDO A PÁGINA ABRE
+        // CARREGAMENTO DA PÁGINA
         // ==========================================
         window.addEventListener("DOMContentLoaded", () => {
             const statusSalvo = safeGetItem(STORAGE_KEY);
@@ -621,7 +695,7 @@
         });
 
         // ==========================================
-        // 2. EVENTO DE ENVIO DO FORMULÁRIO
+        // ENVIO DO FORMULÁRIO
         // ==========================================
         document.getElementById("recruitForm").addEventListener("submit", function(e){
             e.preventDefault();
@@ -642,7 +716,9 @@
             const webhookURL = "https://discord.com/api/webhooks/1483546848382685304/fHtmhEVcYiQt-xK01NIm7aIryXfaiMpguZI4A_jon3NlXlnrTogJRquJbisGKM-cF_8n"; 
             const linkPainelAdmin = "https://devsmontes.github.io/Asw-recrut/adm.html"; 
 
-            const novaAppRef = database.ref('aplicacoes').push();
+            // Verificação preventiva antes de empurrar os dados
+            let currentDb = (typeof database !== 'undefined') ? database : firebase.database();
+            const novaAppRef = currentDb.ref('aplicacoes').push();
             const appId = novaAppRef.key;
 
             const dadosForm = {
