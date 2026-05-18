@@ -126,7 +126,7 @@
             100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
-        /* HERO SECTION CORPORATIVO */
+        /* HERO SECTION */
         .hero {
             padding: 160px 20px 100px;
             width: 100%;
@@ -268,7 +268,7 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* AJUSTES MOBILE RESPONSIVOS */
+        /* AJUSTES RESPONSIVOS */
         @media (max-width: 768px) {
             .navbar { flex-direction: column; gap: 12px; padding: 12px 20px; }
             .nav-links { width: 100%; justify-content: center; flex-wrap: wrap; gap: 12px 20px; }
@@ -470,46 +470,66 @@
     </div>
 
     <script>
+        let timerInterval = null; 
+        const STORAGE_KEY = "asw_status";
+        const APP_ID_KEY = "asw_id";
+
         function abrirModal() { document.getElementById('modalOverlay').classList.add('active'); }
         function fecharModal() { document.getElementById('modalOverlay').classList.remove('active'); }
         function fecharModalFora(e) { fecharModal(); }
+        
         function mostrarResultado(icone, cor, titulo, desc) {
             const area = document.getElementById("resultArea");
             document.getElementById("formArea").style.display = "none";
             document.getElementById("loadingArea").style.display = "none";
             area.style.display = "block";
-            area.innerHTML = `<i class="${icone}" style="font-size: 48px; color: ${cor}; margin-bottom: 16px;"></i><h3>${titulo}</h3><p style="color: var(--text-muted); margin-top: 8px;">${desc}</p>`;
+            area.innerHTML = `
+                <i class="${icone}" style="font-size: 48px; color: ${cor}; margin-bottom: 16px;"></i>
+                <h3>${titulo}</h3>
+                <div style="color: var(--text-muted); margin-top: 12px; font-size: 14px; line-height: 1.6;">${desc}</div>
+            `;
         }
+        
         function mostrarTelaAguardando() {
             mostrarResultado("ph ph-hourglass-high", "var(--status-alert)", "Inscrição Enviada!", "Sua ficha está na fila de análise da diretoria. Não feche o site, o resultado sairá aqui em tempo real.");
         }
+        
         function checarStatusAoVivo(id) {
             database.ref('aplicacoes/' + id).on('value', (snapshot) => {
                 const dados = snapshot.val();
                 if(dados && dados.status === 'approved') {
-                    mostrarResultado("ph ph-check-circle", "var(--status-green)", "Aprovado!", "Parabéns! Sua aplicação foi aprovada. Entre em contato com a Staff.");
+                    // RESOLVIDO: Adicionado redirecionamento direto por botão estilizado para a comunidade
+                    mostrarResultado(
+                        "ph ph-check-circle", 
+                        "var(--status-green)", 
+                        "Aprovado!", 
+                        `Parabéns! Sua aplicação foi aprovada pela Staff do Asphalt Wolves.<br><br>
+                        Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:<br><br>
+                        <a href="https://discord.gg/K9j5v45R" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px;">
+                            <i class="ph ph-discord-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (Discord)
+                        </a>`
+                    );
+                    // Opcional: Remove os dados locais para permitir novos envios futuros
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(APP_ID_KEY);
                 } else if(dados && dados.status === 'rejected') {
-                    mostrarResultado("ph ph-x-circle", "#ef4444", "Recusado", "Infelizmente sua ficha foi recusada pela diretoria desta vez.");
+                    mostrarResultado("ph ph-x-circle", "#ef4444", "Recusado", "Infelizmente sua ficha foi recusada pela nossa diretoria desta vez. Agradecemos o interesse.");
                 }
             });
         }
-        let timerInterval = null; // Apenas para evitar erros caso seja acionado externamente
-        const STORAGE_KEY = "asw_status";
-        const APP_ID_KEY = "asw_id";
     </script>
 
-   <script>
-       const firebaseConfig = {
-  apiKey: "AIzaSyDl5sbPsFkRCHht0_cfJv3OLtqzx1nlPqg",
-  authDomain: "recrutamento-asw.firebaseapp.com",
-  databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
-  projectId: "recrutamento-asw",
-  storageBucket: "recrutamento-asw.firebasestorage.app",
-  messagingSenderId: "1036486404644",
-  appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
-};
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDl5sbPsFkRCHht0_cfJv3OLtqzx1nlPqg",
+            authDomain: "recrutamento-asw.firebaseapp.com",
+            databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
+            projectId: "recrutamento-asw",
+            storageBucket: "recrutamento-asw.firebasestorage.app",
+            messagingSenderId: "1036486404644",
+            appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
+        };
 
-        // Inicializa o Firebase com verificação para evitar duplicações
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -517,10 +537,8 @@
     </script>
 
     <script>
-        const STORAGE_KEY = "asw_status";
-        const APP_ID_KEY = "asw_id";
+        // RESOLVIDO: Linhas duplicadas de STORAGE_KEY retiradas para sanar o erro de sintaxe do navegador!
 
-        // FUNÇÃO ADICIONADA: Verifica se o candidato já tem um formulário enviado ao carregar a página
         window.addEventListener("DOMContentLoaded", () => {
             const statusSalvo = localStorage.getItem(STORAGE_KEY);
             const idSalvo = localStorage.getItem(APP_ID_KEY);
@@ -530,14 +548,13 @@
                 mostrarTelaAguardando();
                 checarStatusAoVivo(idSalvo);
             } else if (statusSalvo === "rejected") {
-                // Se foi bloqueado temporariamente por não ter os requisitos
-                document.getElementById("recruitForm").addEventListener("click", () => {
+                document.getElementById("recruitForm").addEventListener("click", (e) => {
+                     e.preventDefault();
                      mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos.");
                 });
             }
         });
 
-        // Envio do Formulário
         document.getElementById("recruitForm").addEventListener("submit", function(e){
             e.preventDefault();
 
@@ -554,11 +571,9 @@
             document.getElementById("formArea").style.display = "none";
             document.getElementById("loadingArea").style.display = "block";
 
-            // Seu Webhook do Discord ativo
             const webhookURL = "https://discord.com/api/webhooks/1483546848382685304/fHtmhEVcYiQt-xK01NIm7aIryXfaiMpguZI4A_jon3NlXlnrTogJRquJbisGKM-cF_8n"; 
-            const linkPainelAdmin = "https://seu-site.com/admin.html"; // Altere quando hospedar o painel online
+            const linkPainelAdmin = "https://seu-site.com/admin.html"; 
 
-            // Criando chave única na rota /aplicacoes
             const novaAppRef = database.ref('aplicacoes').push();
             const appId = novaAppRef.key;
 
@@ -576,7 +591,6 @@
                 timestamp: Date.now()
             };
 
-            // 1. Salva os dados no banco realtime
             novaAppRef.set(dadosForm).then(() => {
                 localStorage.setItem(STORAGE_KEY, "waiting_approval");
                 localStorage.setItem(APP_ID_KEY, appId);
@@ -584,16 +598,15 @@
                 mostrarTelaAguardando();
                 checarStatusAoVivo(appId);
 
-                // 2. Dispara a notificação de alerta para a Staff no Discord
                 const alertaDiscord = {
                     embeds: [{
                         title: "🔔 NOVO FORMULÁRIO RECEBIDO!",
                         color: 2450411, 
-                        description: `**${dadosForm.nome}** Acabou de enviar um formulário Novo! Verifique o painel de Admin. `,
+                        description: `**${dadosForm.nome}** acabou de enviar uma ficha e está aguardando na tela de espera do site.`,
                         fields: [
                             { name: "💬 Discord do Candidato", value: `\`${dadosForm.discord}\``, inline: true },
                             { name: "🎂 Idade / Horas", value: `${dadosForm.idade} anos / ${dadosForm.horas}h`, inline: true },
-                            { name: "🔗 Ação Necessária", value: `[Clique aqui para abrir o Painel Administrativo](${https://devsmontes.github.io/Asw-recrut/adm.html})` }
+                            { name: "🔗 Ação Necessária", value: `[Clique aqui para abrir o Painel Administrativo](${linkPainelAdmin})` }
                         ],
                         footer: { text: "Asphalt Wolves | Sistema de Triagem Realtime" },
                         timestamp: new Date()
