@@ -512,15 +512,15 @@
                 const dados = snapshot.val();
                 if(dados && dados.status === 'approved') {
                     mostrarResultado(
-                        "ph ph-check-circle", 
-                        "var(--status-green)", 
-                        "Aprovado!", 
-                        `Parabéns! Sua aplicação foi aprovada pela Staff do Asphalt Wolves.<br><br>
-                        Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:<br><br>
-                        <a href="https://discord.gg/K9j5v45R" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px;">
-                            <i class="ph ph-discord-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (Discord)
-                        </a>`
-                    );
+ "ph ph-check-circle", 
+"var(--status-green)", 
+"Aprovado!", 
+`Parabéns! Sua aplicação foi aprovada pela Admin da Asphalt Wolves.<br><br>
+Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:<br><br>
+<a href="https://chat.whatsapp.com/BlfeXFuGZ6N3PqbWtOdedY" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; background-color: #22c55e; border-color: #22c55e; color: #ffffff;">
+    <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (WhatsApp)
+</a>`
+);
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.removeItem(APP_ID_KEY);
                 } else if(dados && dados.status === 'rejected') {
