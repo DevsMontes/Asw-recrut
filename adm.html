@@ -50,7 +50,7 @@
         }
         .login-container h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #fff; }
         .login-container p { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
-        .input-group { text-align: left; margin-bottom: 20px; }
+        .input-group { text-align: left; margin-bottom: 20px; width: 100%; }
         label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.05em; }
         
         input, select { 
@@ -92,7 +92,7 @@
         .status-info h4 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px; }
         .status-info p { font-size: 13px; color: var(--text-muted); }
         
-        .select-wrapper { position: relative; }
+        .select-wrapper { position: relative; width: auto; }
         .status-select {
             appearance: none;
             -webkit-appearance: none;
@@ -150,14 +150,14 @@
         .filters-bar input[type="date"] { color-scheme: dark; }
 
         /* GRID E CARDS DE CANDIDATOS */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
         .card { 
             background: var(--bg-panel); border: 1px solid var(--border-color); padding: 28px; 
             border-radius: 10px; position: relative; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s;
         }
         .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
         
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;}
         .card h3 { font-size: 18px; font-weight: 600; color: #fff; }
         
         .status-badge {
@@ -170,6 +170,7 @@
             font-family: monospace; font-size: 11px; background: rgba(56, 189, 248, 0.08); 
             color: #38bdf8; padding: 4px 8px; border-radius: 4px; display: inline-block; 
             margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.15); width: fit-content;
+            word-break: break-all;
         }
         
         .card-info-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; flex-grow: 1; }
@@ -177,7 +178,7 @@
         .info-item:last-child { border-bottom: none; padding-bottom: 0; }
         .info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.02em; }
         .info-value { font-size: 14px; color: #e4e4e7; line-height: 1.5; }
-        .info-value code { background: var(--bg-dark); padding: 2px 6px; border-radius: 4px; border: 1px solid #27272a; font-size: 13px; color: #f4f4f5; }
+        .info-value code { background: var(--bg-dark); padding: 2px 6px; border-radius: 4px; border: 1px solid #27272a; font-size: 13px; color: #f4f4f5; word-break: break-all; }
 
         .actions { display: flex; gap: 12px; margin-top: auto; }
         .btn { 
@@ -197,6 +198,59 @@
         .empty { color: var(--text-muted); font-size: 15px; grid-column: 1 / -1; text-align: center; padding: 60px 0; }
         
         #adminSection, #viewRegistros { display: none; }
+
+        /* ==========================================
+           MODIFICAÇÕES PARA CELULAR (RESPONSIVIDADE)
+           ========================================== */
+        @media (max-width: 768px) {
+            body { 
+                padding: 20px 15px; /* Reduz as margens laterais no celular */
+            }
+
+            /* Arruma o Cabeçalho */
+            .panel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            h1 { font-size: 20px; }
+            .btn-logout { width: 100%; justify-content: center; }
+
+            /* Arruma a Caixa de Status de Admissões */
+            .status-controller-box {
+                flex-direction: column;
+                align-items: stretch; /* Faz os itens ocuparem 100% da largura */
+                gap: 16px;
+            }
+            .select-wrapper, .status-select { 
+                width: 100%; 
+                min-width: 100%;
+            }
+
+            /* Arruma a Barra de Filtros (O problema da sua print) */
+            .filters-bar {
+                flex-direction: column; /* Coloca os filtros um embaixo do outro */
+                gap: 16px;
+            }
+            .filters-bar .input-group {
+                width: 100%;
+            }
+
+            /* Arruma o Grid para ficar em 1 coluna fina no celular */
+            .grid { 
+                grid-template-columns: 1fr; 
+            }
+            
+            /* Ajustes menores nos botões de abas */
+            .tabs {
+                justify-content: space-between;
+            }
+            .tab-btn {
+                flex: 1;
+                justify-content: center;
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -226,7 +280,7 @@
         <div class="status-controller-box">
             <div class="status-info">
                 <h4>Status de Admissões</h4>
-                <p>Controle se o formulário público do site estará visível para novos candidatos.</p>
+                <p>Controle se o formulário público estará visível para novos candidatos.</p>
             </div>
             <div class="select-wrapper">
                 <select id="statusRecrutamento" class="status-select">
@@ -296,28 +350,24 @@ const firebaseConfig = {
     const database = firebase.database();
     const auth = firebase.auth();
 
-    let todosRegistros = []; // Array global para armazenar os registros e aplicar filtros
+    let todosRegistros = []; 
 
-    // Monitor do estado de Login
     auth.onAuthStateChanged((user) => {
         const loginSection = document.getElementById('loginSection');
         const adminSection = document.getElementById('adminSection');
 
         if (user) {
-            console.log("🔒 [ADMIN] Sessão ativa detectada:", user.email);
             loginSection.style.display = 'none';
             adminSection.style.display = 'block';
             inicializarControleStatus();
             inicializarEscutaDados();
             inicializarEscutaRegistros();
         } else {
-            console.log("🔓 [ADMIN] Nenhuma sessão ativa encontrada.");
             loginSection.style.display = 'block';
             adminSection.style.display = 'none';
         }
     });
 
-    // Evento de Login do Formulário
     document.getElementById('loginForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -340,7 +390,6 @@ const firebaseConfig = {
         auth.signOut().then(() => window.location.reload());
     }
 
-    // ALTERNAR ABAS
     function mudarAba(aba) {
         document.getElementById('tabPendentes').classList.remove('active');
         document.getElementById('tabRegistros').classList.remove('active');
@@ -356,7 +405,6 @@ const firebaseConfig = {
         }
     }
 
-    // LÓGICA DO SELETOR DE STATUS DO RECRUTAMENTO
     function inicializarControleStatus() {
         const configRef = database.ref('config');
         configRef.on('value', (snapshot) => {
@@ -372,7 +420,6 @@ const firebaseConfig = {
         });
     }
 
-    // LISTAR PENDENTES (ABRE OS CARDS COM BOTÕES)
     function inicializarEscutaDados() {
         database.ref('aplicacoes').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
             const container = document.getElementById('containerPedidos');
@@ -391,9 +438,7 @@ const firebaseConfig = {
         });
     }
 
-    // LISTAR REGISTROS (ACEITOS E RECUSADOS)
     function inicializarEscutaRegistros() {
-        // Escuta todas as aplicações no banco para manter o histórico atualizado localmente
         database.ref('aplicacoes').on('value', (snapshot) => {
             todosRegistros = [];
             snapshot.forEach(child => {
@@ -403,16 +448,14 @@ const firebaseConfig = {
                     todosRegistros.push(app);
                 }
             });
-            // Ordena do mais recente para o mais antigo (opcional: usando a data se existir)
             todosRegistros.reverse(); 
             aplicarFiltrosRegistros();
         });
     }
 
-    // FUNÇÃO DE FILTRAGEM DO HISTÓRICO
     function aplicarFiltrosRegistros() {
         const termo = document.getElementById('filtroTexto').value.toLowerCase();
-        const data = document.getElementById('filtroData').value; // Formato YYYY-MM-DD
+        const data = document.getElementById('filtroData').value; 
         const status = document.getElementById('filtroStatus').value;
         const container = document.getElementById('containerRegistros');
 
@@ -422,9 +465,7 @@ const firebaseConfig = {
             const matchNomeDiscord = (app.nome && app.nome.toLowerCase().includes(termo)) || 
                                      (app.discord && app.discord.toLowerCase().includes(termo));
             
-            // Se houver filtro de data, compara com a data salva no banco
             const matchData = data ? (app.dataDecisao === data) : true;
-            
             const matchStatus = status === 'todos' ? true : app.status === status;
 
             return matchNomeDiscord && matchData && matchStatus;
@@ -440,7 +481,6 @@ const firebaseConfig = {
         });
     }
 
-    // GERA O HTML DOS CARDS (Serve para Pendentes e Registros)
     function criarCardHtml(id, app, isPendente) {
         const card = document.createElement('div');
         card.className = 'card';
@@ -449,23 +489,18 @@ const firebaseConfig = {
         let botoesAcao = '';
 
         if (!isPendente) {
-            // Visual de Registro (Mostra badge de status)
             const badgeClass = app.status === 'approved' ? 'badge-approved' : 'badge-rejected';
             const badgeText = app.status === 'approved' ? 'Aceito' : 'Recusado';
-            
-            // Formata a data para padrão BR (DD/MM/YYYY) caso ela exista
             const dataFormatada = app.dataDecisao ? app.dataDecisao.split('-').reverse().join('/') : 'Data não registrada';
 
             headerExtra = `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
             
-            // Adiciona a data no corpo do card
             botoesAcao = `
                 <div style="margin-top: auto; padding-top: 16px; border-top: 1px dashed var(--border-color); text-align: center;">
                     <span style="font-size: 12px; color: var(--text-muted);"><i class="ph ph-calendar-check"></i> Decidido em: <strong>${dataFormatada}</strong></span>
                 </div>
             `;
         } else {
-            // Visual de Pendente (Mostra os botões)
             botoesAcao = `
                 <div class="actions">
                     <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph ph-check"></i> Aceitar</button>
@@ -499,7 +534,7 @@ const firebaseConfig = {
                     <span class="info-value">${app.horarios || 'Não informados'}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">🛠️ Histórico Administrativo / Experiência</span>
+                    <span class="info-label">🛠️ Histórico Administrativo</span>
                     <span class="info-value">${app.adm || 'Nenhum'}</span>
                 </div>
                 <div class="info-item">
@@ -512,19 +547,17 @@ const firebaseConfig = {
         return card;
     }
 
-    // ALTERA O STATUS E SALVA A DATA
     function decidir(id, nomeCandidato, novoStatus) {
         const acaoTexto = novoStatus === 'approved' ? 'APROVAR' : 'RECUSAR';
         const confirmar = confirm(`Tem certeza que deseja ${acaoTexto} a ficha de ${nomeCandidato}?`);
         
         if (!confirmar) return;
 
-        // Pega a data atual e formata como YYYY-MM-DD para salvar no banco
         const dataAtual = new Date().toISOString().split('T')[0];
 
         database.ref('aplicacoes/' + id).update({ 
             status: novoStatus,
-            dataDecisao: dataAtual // Novo dado sendo adicionado à ficha
+            dataDecisao: dataAtual 
         }).catch(err => {
             alert("Erro ao atualizar dados. Verifique o console.");
             console.error(err);
