@@ -53,11 +53,11 @@
         .input-group { text-align: left; margin-bottom: 20px; }
         label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.05em; }
         
-        input { 
+        input, select { 
             width: 100%; padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); 
             background: var(--bg-dark); color: #fff; font-size: 14px; transition: all 0.2s;
         }
-        input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
+        input:focus, select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
 
         /* HEADER DO PAINEL */
         .panel-header {
@@ -77,13 +77,13 @@
         }
         .btn-logout:hover { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); }
 
-        /* CONTROLE DE STATUS GLOBAL (NOVO) */
+        /* CONTROLE DE STATUS GLOBAL */
         .status-controller-box {
             background: var(--bg-panel);
             border: 1px solid var(--border-color);
             padding: 20px 24px;
             border-radius: 10px;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -96,20 +96,13 @@
         .status-select {
             appearance: none;
             -webkit-appearance: none;
-            background: var(--bg-dark);
-            color: #fff;
-            border: 1px solid var(--border-color);
             padding: 12px 40px 12px 16px;
-            border-radius: 6px;
-            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
             min-width: 220px;
         }
-        .status-select:focus { border-color: var(--primary-color); outline: none; }
         .select-wrapper::after {
-            content: "\e292"; /* Código Phosphor para a seta */
+            content: "\e292";
             font-family: "Phosphor";
             position: absolute; right: 14px; top: 50%;
             transform: translateY(-50%);
@@ -118,6 +111,44 @@
             font-size: 16px;
         }
 
+        /* NAVEGAÇÃO DE ABAS */
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab-btn:hover { background: var(--bg-panel); color: #fff; }
+        .tab-btn.active { background: var(--bg-panel); border-color: var(--border-color); color: #fff; }
+
+        /* BARRA DE FILTROS DE REGISTRO */
+        .filters-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: var(--bg-panel);
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .filters-bar .input-group { margin-bottom: 0; flex: 1; }
+        .filters-bar input[type="date"] { color-scheme: dark; }
+
         /* GRID E CARDS DE CANDIDATOS */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
         .card { 
@@ -125,8 +156,16 @@
             border-radius: 10px; position: relative; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s;
         }
         .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
-        .card h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: #fff; }
         
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+        .card h3 { font-size: 18px; font-weight: 600; color: #fff; }
+        
+        .status-badge {
+            font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-transform: uppercase;
+        }
+        .badge-approved { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-rejected { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
         .card .id-badge { 
             font-family: monospace; font-size: 11px; background: rgba(56, 189, 248, 0.08); 
             color: #38bdf8; padding: 4px 8px; border-radius: 4px; display: inline-block; 
@@ -157,7 +196,7 @@
         
         .empty { color: var(--text-muted); font-size: 15px; grid-column: 1 / -1; text-align: center; padding: 60px 0; }
         
-        #adminSection { display: none; }
+        #adminSection, #viewRegistros { display: none; }
     </style>
 </head>
 <body>
@@ -196,9 +235,47 @@
                 </select>
             </div>
         </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tabPendentes" onclick="mudarAba('pendentes')">
+                <i class="ph ph-clock"></i> Pendentes
+            </button>
+            <button class="tab-btn" id="tabRegistros" onclick="mudarAba('registros')">
+                <i class="ph ph-archive"></i> Registros
+            </button>
+        </div>
         
-        <div class="grid" id="containerPedidos">
-            <p class="empty">Buscando novas aplicações ao vivo...</p>
+        <div id="viewPendentes">
+            <div class="grid" id="containerPedidos">
+                <p class="empty">Buscando novas aplicações ao vivo...</p>
+            </div>
+        </div>
+
+        <div id="viewRegistros">
+            <div class="filters-bar">
+                <div class="input-group">
+                    <label>Buscar Nome ou Discord</label>
+                    <input type="text" id="filtroTexto" placeholder="Ex: João, user#1234" onkeyup="aplicarFiltrosRegistros()">
+                </div>
+                <div class="input-group">
+                    <label>Data de Resposta</label>
+                    <input type="date" id="filtroData" onchange="aplicarFiltrosRegistros()">
+                </div>
+                <div class="input-group">
+                    <label>Status da Ficha</label>
+                    <div class="select-wrapper">
+                        <select id="filtroStatus" onchange="aplicarFiltrosRegistros()">
+                            <option value="todos">Todos os Status</option>
+                            <option value="approved">Apenas Aceitos</option>
+                            <option value="rejected">Apenas Recusados</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid" id="containerRegistros">
+                <p class="empty">Carregando histórico de registros...</p>
+            </div>
         </div>
     </div>
 
@@ -219,6 +296,8 @@ const firebaseConfig = {
     const database = firebase.database();
     const auth = firebase.auth();
 
+    let todosRegistros = []; // Array global para armazenar os registros e aplicar filtros
+
     // Monitor do estado de Login
     auth.onAuthStateChanged((user) => {
         const loginSection = document.getElementById('loginSection');
@@ -228,8 +307,9 @@ const firebaseConfig = {
             console.log("🔒 [ADMIN] Sessão ativa detectada:", user.email);
             loginSection.style.display = 'none';
             adminSection.style.display = 'block';
+            inicializarControleStatus();
             inicializarEscutaDados();
-            inicializarControleStatus(); // Inicializa o controle do botão liga/desliga
+            inicializarEscutaRegistros();
         } else {
             console.log("🔓 [ADMIN] Nenhuma sessão ativa encontrada.");
             loginSection.style.display = 'block';
@@ -245,9 +325,6 @@ const firebaseConfig = {
         const pass = document.getElementById('loginPassword').value;
 
         auth.signInWithEmailAndPassword(email, pass)
-        .then((userCredential) => {
-            console.log("Conectado com sucesso como:", userCredential.user.email);
-        })
         .catch(err => {
             if (err.code === 'auth/wrong-password') {
                 alert("Senha incorreta! Digite novamente.");
@@ -256,22 +333,32 @@ const firebaseConfig = {
             } else {
                 alert("Erro ao autenticar: " + err.message);
             }
-            console.error(err);
         });
     });
 
-    // Função para desconectar do painel
     function fazerLogout() {
-        auth.signOut().then(() => {
-            window.location.reload();
-        });
+        auth.signOut().then(() => window.location.reload());
     }
 
-    // LÓGICA DO SELETOR DE STATUS DO RECRUTAMENTO (NOVO)
+    // ALTERNAR ABAS
+    function mudarAba(aba) {
+        document.getElementById('tabPendentes').classList.remove('active');
+        document.getElementById('tabRegistros').classList.remove('active');
+        document.getElementById('viewPendentes').style.display = 'none';
+        document.getElementById('viewRegistros').style.display = 'none';
+
+        if(aba === 'pendentes') {
+            document.getElementById('tabPendentes').classList.add('active');
+            document.getElementById('viewPendentes').style.display = 'block';
+        } else {
+            document.getElementById('tabRegistros').classList.add('active');
+            document.getElementById('viewRegistros').style.display = 'block';
+        }
+    }
+
+    // LÓGICA DO SELETOR DE STATUS DO RECRUTAMENTO
     function inicializarControleStatus() {
         const configRef = database.ref('config');
-
-        // Sincroniza visualmente o seletor com o estado atual salvo no banco
         configRef.on('value', (snapshot) => {
             const config = snapshot.val();
             if (config && config.status) {
@@ -279,31 +366,18 @@ const firebaseConfig = {
             }
         });
 
-        // Altera o status global no banco quando o admin mudar a opção
         document.getElementById('statusRecrutamento').addEventListener('change', (e) => {
-            const novoStatus = e.target.value;
-            
-            configRef.update({ status: novoStatus })
-            .then(() => {
-                console.log(`Status de recrutamento alterado para: ${novoStatus}`);
-            })
-            .catch((err) => {
-                console.error("Erro ao atualizar status global:", err);
-                alert("Erro ao salvar alteração. Verifique suas permissões.");
-            });
+            configRef.update({ status: e.target.value })
+            .catch(() => alert("Erro ao salvar alteração. Verifique suas permissões."));
         });
     }
 
-    // Puxa e escuta aplicações pendentes ao vivo
+    // LISTAR PENDENTES (ABRE OS CARDS COM BOTÕES)
     function inicializarEscutaDados() {
-        console.log("📡 [ADMIN] Conectando ao nó 'aplicacoes' filtrando por 'pending'...");
-        
         database.ref('aplicacoes').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
             const container = document.getElementById('containerPedidos');
             container.innerHTML = "";
-            
             const dados = snapshot.val();
-            console.log("📥 [ADMIN] Dados recebidos:", dados);
 
             if (!dados) {
                 container.innerHTML = '<p class="empty">Nenhum formulário aguardando resposta no momento.</p>';
@@ -312,61 +386,145 @@ const firebaseConfig = {
 
             Object.keys(dados).forEach(id => {
                 const app = dados[id];
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>${app.nome || 'Sem Nome'}</h3>
-                    <div class="id-badge">ID: ${id}</div>
-                    
-                    <div class="card-info-list">
-                        <div class="info-item">
-                            <span class="info-label">💬 Usuário Discord</span>
-                            <span class="info-value"><code>${app.discord || 'Não informado'}</code></span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">🎂 Idade & Horas de Jogo</span>
-                            <span class="info-value">${app.idade || '--'} anos / <strong>${app.horas || '0'}h</strong></span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">📅 Rotina Diária</span>
-                            <span class="info-value">${app.rotina || 'Não informada'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">⏰ Horários de Acesso</span>
-                            <span class="info-value">${app.horarios || 'Não informados'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">🛠️ Histórico Administrativo / Experiência</span>
-                            <span class="info-value">${app.adm || 'Nenhum'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">🚀 Intenção de Liderança</span>
-                            <span class="info-value">${app.ajuda || 'Não'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="actions">
-                        <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph ph-check"></i> Aceitar</button>
-                        <button class="btn btn-reject" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'rejected')"><i class="ph ph-x"></i> Recusar</button>
-                    </div>
-                `;
-                container.appendChild(card);
+                container.appendChild(criarCardHtml(id, app, true));
             });
         });
     }
 
-    // Altera o status da ficha
+    // LISTAR REGISTROS (ACEITOS E RECUSADOS)
+    function inicializarEscutaRegistros() {
+        // Escuta todas as aplicações no banco para manter o histórico atualizado localmente
+        database.ref('aplicacoes').on('value', (snapshot) => {
+            todosRegistros = [];
+            snapshot.forEach(child => {
+                const app = child.val();
+                if (app.status === 'approved' || app.status === 'rejected') {
+                    app.id = child.key;
+                    todosRegistros.push(app);
+                }
+            });
+            // Ordena do mais recente para o mais antigo (opcional: usando a data se existir)
+            todosRegistros.reverse(); 
+            aplicarFiltrosRegistros();
+        });
+    }
+
+    // FUNÇÃO DE FILTRAGEM DO HISTÓRICO
+    function aplicarFiltrosRegistros() {
+        const termo = document.getElementById('filtroTexto').value.toLowerCase();
+        const data = document.getElementById('filtroData').value; // Formato YYYY-MM-DD
+        const status = document.getElementById('filtroStatus').value;
+        const container = document.getElementById('containerRegistros');
+
+        container.innerHTML = "";
+
+        const filtrados = todosRegistros.filter(app => {
+            const matchNomeDiscord = (app.nome && app.nome.toLowerCase().includes(termo)) || 
+                                     (app.discord && app.discord.toLowerCase().includes(termo));
+            
+            // Se houver filtro de data, compara com a data salva no banco
+            const matchData = data ? (app.dataDecisao === data) : true;
+            
+            const matchStatus = status === 'todos' ? true : app.status === status;
+
+            return matchNomeDiscord && matchData && matchStatus;
+        });
+
+        if (filtrados.length === 0) {
+            container.innerHTML = '<p class="empty">Nenhum registro encontrado com estes filtros.</p>';
+            return;
+        }
+
+        filtrados.forEach(app => {
+            container.appendChild(criarCardHtml(app.id, app, false));
+        });
+    }
+
+    // GERA O HTML DOS CARDS (Serve para Pendentes e Registros)
+    function criarCardHtml(id, app, isPendente) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        let headerExtra = '';
+        let botoesAcao = '';
+
+        if (!isPendente) {
+            // Visual de Registro (Mostra badge de status)
+            const badgeClass = app.status === 'approved' ? 'badge-approved' : 'badge-rejected';
+            const badgeText = app.status === 'approved' ? 'Aceito' : 'Recusado';
+            
+            // Formata a data para padrão BR (DD/MM/YYYY) caso ela exista
+            const dataFormatada = app.dataDecisao ? app.dataDecisao.split('-').reverse().join('/') : 'Data não registrada';
+
+            headerExtra = `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
+            
+            // Adiciona a data no corpo do card
+            botoesAcao = `
+                <div style="margin-top: auto; padding-top: 16px; border-top: 1px dashed var(--border-color); text-align: center;">
+                    <span style="font-size: 12px; color: var(--text-muted);"><i class="ph ph-calendar-check"></i> Decidido em: <strong>${dataFormatada}</strong></span>
+                </div>
+            `;
+        } else {
+            // Visual de Pendente (Mostra os botões)
+            botoesAcao = `
+                <div class="actions">
+                    <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph ph-check"></i> Aceitar</button>
+                    <button class="btn btn-reject" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'rejected')"><i class="ph ph-x"></i> Recusar</button>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="card-header">
+                <h3>${app.nome || 'Sem Nome'}</h3>
+                ${headerExtra}
+            </div>
+            <div class="id-badge">ID: ${id}</div>
+            
+            <div class="card-info-list">
+                <div class="info-item">
+                    <span class="info-label">💬 Usuário Discord</span>
+                    <span class="info-value"><code>${app.discord || 'Não informado'}</code></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🎂 Idade & Horas de Jogo</span>
+                    <span class="info-value">${app.idade || '--'} anos / <strong>${app.horas || '0'}h</strong></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">📅 Rotina Diária</span>
+                    <span class="info-value">${app.rotina || 'Não informada'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">⏰ Horários de Acesso</span>
+                    <span class="info-value">${app.horarios || 'Não informados'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🛠️ Histórico Administrativo / Experiência</span>
+                    <span class="info-value">${app.adm || 'Nenhum'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🚀 Intenção de Liderança</span>
+                    <span class="info-value">${app.ajuda || 'Não'}</span>
+                </div>
+            </div>
+            ${botoesAcao}
+        `;
+        return card;
+    }
+
+    // ALTERA O STATUS E SALVA A DATA
     function decidir(id, nomeCandidato, novoStatus) {
         const acaoTexto = novoStatus === 'approved' ? 'APROVAR' : 'RECUSAR';
         const confirmar = confirm(`Tem certeza que deseja ${acaoTexto} a ficha de ${nomeCandidato}?`);
         
         if (!confirmar) return;
 
-        console.log(`⏳ [ADMIN] Atualizando ID ${id} para status: ${novoStatus}`);
+        // Pega a data atual e formata como YYYY-MM-DD para salvar no banco
+        const dataAtual = new Date().toISOString().split('T')[0];
 
-        database.ref('aplicacoes/' + id).update({ status: novoStatus })
-        .then(() => {
-            console.log(`✅ [SUCESSO] Pedido ${id} alterado.`);
+        database.ref('aplicacoes/' + id).update({ 
+            status: novoStatus,
+            dataDecisao: dataAtual // Novo dado sendo adicionado à ficha
         }).catch(err => {
             alert("Erro ao atualizar dados. Verifique o console.");
             console.error(err);
