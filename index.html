@@ -27,6 +27,8 @@
             --transition-speed: 0.2s;
             --status-green: #22c55e;
             --status-green-bg: rgba(34, 197, 94, 0.1);
+            --status-red: #ef4444;
+            --status-red-bg: rgba(239, 68, 68, 0.1);
             --status-alert: #f59e0b;
         }
 
@@ -111,19 +113,20 @@
             letter-spacing: 1px;
             border: 1px solid rgba(34, 197, 94, 0.2);
             margin-bottom: 24px;
+            transition: all 0.3s ease;
         }
         .status-dot {
             width: 8px;
             height: 8px;
-            background: var(--status-green);
+            background: currentColor;
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--status-green);
+            box-shadow: 0 0 8px currentColor;
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(currentColor, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(currentColor, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(currentColor, 0); }
         }
 
         /* HERO SECTION */
@@ -303,8 +306,8 @@
 
     <header class="hero">
         <div class="hero-content animate-fade-up">
-            <div class="status-indicator">
-                <div class="status-dot"></div> Recrutamento Aberto
+            <div id="hero-status-indicator" class="status-indicator">
+                <div class="status-dot"></div> <span id="hero-status-text">Recrutamento Aberto</span>
             </div>
             <br>
             <span class="badge"><i class="ph-bold ph-steering-wheel"></i> Portal CPM2</span>
@@ -410,9 +413,15 @@
                         <input type="text" id="nome_game" required placeholder="Ex: Carlos / Asw_King">
                     </div>
 
-                    <div class="input-group">
-                        <label>Usuário do Discord (Tag)</label>
-                        <input type="text" id="discord_tag" required placeholder="Ex: carlos_asw">
+                    <div class="two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="input-group">
+                            <label>Usuário do Discord (Tag)</label>
+                            <input type="text" id="discord_tag" required placeholder="Ex: carlos_asw">
+                        </div>
+                        <div class="input-group">
+                            <label>WhatsApp (com DDD)</label>
+                            <input type="tel" id="whatsapp" required placeholder="Ex: 11988887777">
+                        </div>
                     </div>
 
                     <div class="two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -487,85 +496,69 @@
         const database = firebase.database();
 
         // ==========================================
-// MONITOR DE STATUS DO RECRUTAMENTO (REALTIME)
-// ==========================================
-database.ref('config').on('value', (snapshot) => {
-    const config = snapshot.val();
-    const idSalvo = localStorage.getItem('idFichaAsphalt');
-    const statusSalvo = localStorage.getItem('statusFichaAsphalt');
+        // MONITOR DE STATUS DO RECRUTAMENTO (REALTIME)
+        // ==========================================
+        database.ref('config').on('value', (snapshot) => {
+            const config = snapshot.val();
+            const idSalvo = localStorage.getItem('idFichaAsphalt');
+            const statusSalvo = localStorage.getItem('statusFichaAsphalt');
 
-    // 1. ATUALIZAR A BADGE VISUAL DA PÁGINA INICIAL
-    // Procura elementos que contenham o texto de recrutamento para atualizá-los
-    const badgesRecrutamento = document.querySelectorAll('span, div, p');
-    badgesRecrutamento.forEach(el => {
-        if (el.textContent.includes('RECRUTAMENTO')) {
+            // 1. ATUALIZAR A BADGE VISUAL DA PÁGINA INICIAL
+            const heroIndicator = document.getElementById('hero-status-indicator');
+            const heroText = document.getElementById('hero-status-text');
+
             if (config && config.status === 'fechado') {
-                el.innerHTML = "🔴 RECRUTAMENTO FECHADO";
-                el.style.backgroundColor = "rgba(239, 68, 68, 0.1)"; // Fundo vermelho sutil
-                el.style.color = "#ef4444"; // Texto Vermelho
-                el.style.borderColor = "rgba(239, 68, 68, 0.2)";
+                if (heroIndicator && heroText) {
+                    heroText.innerText = "Recrutamento Fechado";
+                    heroIndicator.style.color = "var(--status-red)";
+                    heroIndicator.style.backgroundColor = "var(--status-red-bg)";
+                    heroIndicator.style.borderColor = "rgba(239, 68, 68, 0.2)";
+                    
+                    // Paralisa a animação da bolinha e deixa vermelha
+                    const dot = heroIndicator.querySelector('.status-dot');
+                    if(dot) dot.style.animation = "none";
+                }
+
+                // 2. CONTROLAR O BLOQUEIO DO FORMULÁRIO / MODAL
+                if (!idSalvo || statusSalvo === 'rejected') {
+                    if (typeof abrirModal === "function") {
+                        abrirModal(); 
+                    }
+
+                    const modalTitle = document.querySelector('#formArea h3');
+                    const modalDesc = document.querySelector('.form-estimated-time');
+                    const recruitForm = document.getElementById('recruitForm');
+
+                    if (modalTitle) modalTitle.innerText = "Recrutamento Fechado!";
+                    if (modalDesc) {
+                        modalDesc.innerHTML = `<i class="ph ph-lock-keyhole" style="color: var(--status-red); font-size: 18px;"></i> As vagas para a Asphalt Wolves estão encerradas no momento.`;
+                        modalDesc.style.color = "var(--text-muted)";
+                    }
+                    if (recruitForm) {
+                        recruitForm.innerHTML = `<p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 24px;">Fique atento ao nosso Discord oficial para saber quando o próximo recrutamento começará!</p>
+                        <button type="button" class="btn-secondary" onclick="fecharModal()" style="width: 100%; justify-content: center;">Voltar para o site</button>`;
+                    }
+                }
             } else {
-                el.innerHTML = "🟢 RECRUTAMENTO ABERTO";
-                el.style.backgroundColor = "rgba(16, 185, 129, 0.1)"; // Fundo verde sutil
-                el.style.color = "#10b981"; // Texto Verde
-                el.style.borderColor = "rgba(16, 185, 129, 0.2)";
+                // VOLTAR PARA ABERTO
+                if (heroIndicator && heroText) {
+                    heroText.innerText = "Recrutamento Aberto";
+                    heroIndicator.style.color = "var(--status-green)";
+                    heroIndicator.style.backgroundColor = "var(--status-green-bg)";
+                    heroIndicator.style.borderColor = "rgba(34, 197, 94, 0.2)";
+                    
+                    // Restaura a animação da bolinha
+                    const dot = heroIndicator.querySelector('.status-dot');
+                    if(dot) dot.style.animation = "pulse 2s infinite";
+                }
             }
-        }
-    });
-
-    // 2. CONTROLAR O BLOQUEIO DO FORMULÁRIO / MODAL
-    if (config && config.status === 'fechado') {
-        console.log("🔒 Recrutamento fechado pela staff.");
-
-        // Se for um usuário novo ou alguém rejeitado, bloqueia a abertura do formulário
-        if (!idSalvo || statusSalvo === 'rejected') {
-            
-            // Força a execução da função que abre a janela de aviso do seu sistema
-            if (typeof mostrarTelaAguardando === "function") {
-                mostrarTelaAguardando(); 
-            } else if (typeof abrirModal === "function") {
-                abrirModal(); // Use o nome correto da função que abre o modal no seu site
-            }
-
-            // Seleciona e altera os elementos de dentro do seu Modal/Janela de aviso
-            // (Baseado na estrutura visual das suas imagens)
-            const modalTitle = document.querySelector('.modal h2, #statusTitle, h3');
-            const modalText = document.querySelector('.modal p, #statusDescription');
-            const modalIcon = document.querySelector('.modal i, #statusIcon, .ph-hourglass');
-            const btnSuporte = document.querySelector('.modal a, .btn-suporte');
-
-            if (modalIcon) {
-                // Remove a ampulheta e adiciona o cadeado de fechado
-                modalIcon.className = "ph ph-lock-keyhole";
-                modalIcon.style.color = "#ef4444";
-            }
-            if (modalTitle) {
-                modalTitle.innerText = "Recrutamento Fechado!";
-            }
-            if (modalText) {
-                modalText.innerHTML = "No momento, as vagas para a <strong>Asphalt Wolves</strong> estão encerradas.<br>Fique atento ao nosso Discord oficial para saber quando o próximo recrutamento começará!";
-            }
-            if (btnSuporte) {
-                // Opcional: Altera o botão de suporte se quiser direcionar para o Discord em vez do WhatsApp ao fechar
-                btnSuporte.style.display = "none"; // Oculta o botão de suporte se preferir
-            }
-        }
-    } else {
-        // Se o recrutamento abrir e ele não tiver nenhuma ficha pendente ativa, limpa os bloqueios
-        if (!idSalvo || statusSalvo === 'rejected') {
-            if (typeof mostrarTelaInscricao === "function") {
-                mostrarTelaInscricao();
-            }
-        }
-    }
-});
-</script>
+        });
+    </script>
     <script>
         let timerInterval = null; 
         const STORAGE_KEY = "asw_status";
         const APP_ID_KEY = "asw_id";
 
-        // Sistema de Memória Reserva para Contornar Bloqueios de Rastreamento (Edge/Guias Anônimas)
         let memoriaStatus = null;
         let memoriaId = null;
 
@@ -614,45 +607,33 @@ database.ref('config').on('value', (snapshot) => {
         }
         
         function checarStatusAoVivo(id) {
-            console.log("🟢 [DEBUG] checarStatusAoVivo conectando para o ID:", id);
-            
-            if (!id) {
-                console.error("❌ [ERRO] ID inválido fornecido para checagem.");
-                return;
-            }
+            if (!id) return;
 
             const referenciaFicha = database.ref('aplicacoes/' + id);
 
-            // 1. TENTATIVA PADRÃO: Escuta contínua via WebSockets (.on)
             referenciaFicha.on('value', (snapshot) => {
                 const dados = snapshot.val();
-                console.log("📥 [LIVE] Atualização recebida via WebSocket:", dados);
                 if (dados) processarResultadoFicha(id, dados);
             }, (error) => {
-                console.warn("⚠️ [AVISO] Conexão Realtime bloqueada pelo navegador. Ativando Fallback de checagem manual...");
                 acionarChecagemManualFallback(id);
             });
 
-            // 2. SISTEMA RESERVA: Se o navegador travar o stream, força uma leitura a cada 4 segundos
             function acionarChecagemManualFallback(idFicha) {
                 if (timerInterval) clearInterval(timerInterval);
                 
                 timerInterval = setInterval(() => {
-                    console.log("🔄 [FALLBACK] Fazendo requisição direta ao banco para ID:", idFicha);
                     referenciaFicha.get().then((snapshot) => {
                         const dados = snapshot.val();
                         if (dados) processarResultadoFicha(idFicha, dados);
-                    }).catch(err => console.error("❌ Falha na requisição reserva:", err));
+                    });
                 }, 4000);
             }
         }
 
-        // Função unificada para gerenciar as telas de Aprovação ou Recusa
         function processarResultadoFicha(id, dados) {
             if (!dados || !dados.status) return;
 
             if (dados.status === 'approved') {
-                console.log("🏆 Aplicação Aprovada!");
                 if (timerInterval) clearInterval(timerInterval);
                 database.ref('aplicacoes/' + id).off();
 
@@ -669,7 +650,7 @@ database.ref('config').on('value', (snapshot) => {
                                 Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:
                             </div>
                             <a href="https://chat.whatsapp.com/BlfeXFuGZ6N3PqbWtOdedY" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; background-color: #22c55e; border-color: #22c55e; color: #ffffff; border-radius: 6px; font-weight: bold; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);">
-                                <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade (WhatsApp)
+                                <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade
                             </a>
                         </div>
                     `;
@@ -679,7 +660,6 @@ database.ref('config').on('value', (snapshot) => {
                 localStorage.removeItem(APP_ID_KEY);
                 
             } else if (dados.status === 'rejected') {
-                console.log("❌ Aplicação Recusada.");
                 if (timerInterval) clearInterval(timerInterval);
                 database.ref('aplicacoes/' + id).off();
 
@@ -710,7 +690,6 @@ database.ref('config').on('value', (snapshot) => {
             }
         }
 
-        // Controle de persistência de tela ao recarregar a página
         window.addEventListener("DOMContentLoaded", () => {
             const statusSalvo = safeGetItem(STORAGE_KEY);
             const idSalvo = safeGetItem(APP_ID_KEY);
@@ -722,17 +701,22 @@ database.ref('config').on('value', (snapshot) => {
             } else if (statusSalvo === "rejected") {
                 document.getElementById("recruitForm").addEventListener("click", (e) => {
                      e.preventDefault();
-                     mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos.");
+                     mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos em tentativas anteriores.");
                 });
             }
         });
 
-        // Envio estruturado do formulário
+        // ENVIO DO FORMULÁRIO COM WHATSAPP
         document.getElementById("recruitForm").addEventListener("submit", function(e){
             e.preventDefault();
 
             const idade = parseInt(document.getElementById("age").value);
             const horas = parseInt(document.getElementById("hours").value);
+            
+            // Pega o WhatsApp e remove traços/espaços usando Regex
+            const whatsappBruto = document.getElementById("whatsapp").value;
+            const numeroWhatsapp = whatsappBruto.replace(/[^0-9]/g, '');
+
             const passouRequisitos = (idade >= 15 && horas >= 10);
 
             if (!passouRequisitos) {
@@ -754,8 +738,8 @@ database.ref('config').on('value', (snapshot) => {
                 id: appId,
                 nome: document.getElementById("nome_game").value,
                 discord: document.getElementById("discord_tag").value,
+                whatsapp: numeroWhatsapp, // ENVIANDO WHATSAPP PARA O BANCO
                 idade: idade,
-                hours: horas, // Mantendo a propriedade mapeada com base no seu formulário
                 horas: horas,
                 rotina: document.getElementById("rotina").value,
                 horarios: document.getElementById("horarios").value,
@@ -777,11 +761,12 @@ database.ref('config').on('value', (snapshot) => {
                     embeds: [{
                         title: "🔔 NOVO FORMULÁRIO RECEBIDO!",
                         color: 2450411, 
-                        description: `**${dadosForm.nome}** acabou de enviar uma ficha e está aguardando na tela de espera do site.`,
+                        description: `**${dadosForm.nome}** enviou uma ficha e está aguardando análise.`,
                         fields: [
-                            { name: "💬 Discord do Candidato", value: `\`${dadosForm.discord}\``, inline: true },
+                            { name: "💬 Discord", value: `\`${dadosForm.discord}\``, inline: true },
+                            { name: "📱 WhatsApp", value: `\`${dadosForm.whatsapp}\``, inline: true },
                             { name: "🎂 Idade / Horas", value: `${dadosForm.idade} anos / ${dadosForm.horas}h`, inline: true },
-                            { name: "🔗 Ação Necessária", value: `[Clique aqui para abrir o Painel Administrativo](${linkPainelAdmin})` }
+                            { name: "🔗 Ação Necessária", value: `[Abrir Painel Administrativo](${linkPainelAdmin})` }
                         ],
                         footer: { text: "Asphalt Wolves | Sistema de Triagem Realtime" },
                         timestamp: new Date()
@@ -796,7 +781,6 @@ database.ref('config').on('value', (snapshot) => {
 
             }).catch((err) => {
                 alert("Erro ao enviar dados para o servidor.");
-                console.error(err);
             });
         });
 </script>
