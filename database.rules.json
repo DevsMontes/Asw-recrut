@@ -1,0 +1,79 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "config": {
+      ".read": true,
+      ".write": "auth != null && auth.uid === 'HZ2txmi9fPVzDKvt5f5OomAi1B42' && newData.exists()",
+      ".validate": "newData.hasChildren(['status', 'updatedAt', 'updatedBy'])",
+      "status": {
+        ".validate": "newData.val() === 'aberto' || newData.val() === 'fechado'"
+      },
+      "updatedAt": {
+        ".validate": "newData.isNumber() && newData.val() === now"
+      },
+      "updatedBy": { ".validate": "newData.val() === auth.uid" },
+      "$other": { ".validate": "data.exists() && newData.val() === data.val()" }
+    },
+    "aplicacoes": {
+      ".indexOn": ["status", "timestamp"],
+      ".read": "auth != null && auth.uid === 'HZ2txmi9fPVzDKvt5f5OomAi1B42'",
+      "$id": {
+        ".write": "newData.exists() && ((!data.exists() && $id.matches(/^[-A-Za-z0-9_]{20}$/) && root.child('config/status').val() === 'aberto' && newData.child('status').val() === 'pending' && newData.hasChildren(['id','nome','discord','whatsapp','idade','horas','rotina','horarios','adm','ajuda','status','timestamp','consent']) && !newData.child('decidedAt').exists() && !newData.child('decidedBy').exists() && !newData.child('dataDecisao').exists()) || (data.exists() && auth != null && auth.uid === 'HZ2txmi9fPVzDKvt5f5OomAi1B42' && data.child('status').val() === 'pending' && (newData.child('status').val() === 'approved' || newData.child('status').val() === 'rejected') && newData.hasChildren(['dataDecisao','decidedAt','decidedBy'])))",
+        ".validate": "!data.exists() || (newData.child('id').val() === data.child('id').val() && newData.child('nome').val() === data.child('nome').val() && newData.child('discord').val() === data.child('discord').val() && newData.child('whatsapp').val() === data.child('whatsapp').val() && newData.child('idade').val() === data.child('idade').val() && newData.child('horas').val() === data.child('horas').val() && newData.child('rotina').val() === data.child('rotina').val() && newData.child('horarios').val() === data.child('horarios').val() && newData.child('adm').val() === data.child('adm').val() && newData.child('ajuda').val() === data.child('ajuda').val() && newData.child('timestamp').val() === data.child('timestamp').val() && newData.child('consent').val() === data.child('consent').val())",
+        "id": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.val() === $id"
+        },
+        "nome": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isString() && newData.val().length >= 2 && newData.val().length <= 80"
+        },
+        "discord": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+        },
+        "whatsapp": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isString() && newData.val().matches(/^[1-9]{2}[0-9]{8,9}$/)"
+        },
+        "idade": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isNumber() && newData.val() >= 15 && newData.val() <= 100 && newData.val() % 1 === 0"
+        },
+        "horas": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isNumber() && newData.val() >= 10 && newData.val() <= 100000 && newData.val() % 1 === 0"
+        },
+        "rotina": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isString() && newData.val().length >= 1 && newData.val().length <= 300"
+        },
+        "horarios": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isString() && newData.val().length >= 1 && newData.val().length <= 300"
+        },
+        "adm": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isString() && newData.val().length >= 1 && newData.val().length <= 600"
+        },
+        "ajuda": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.val() === 'Sim' || newData.val() === 'Não'"
+        },
+        "consent": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.val() === true"
+        },
+        "timestamp": {
+          ".validate": "data.exists() ? newData.val() === data.val() : newData.isNumber() && newData.val() === now"
+        },
+        "status": {
+          ".read": true,
+          ".validate": "newData.val() === 'pending' || newData.val() === 'approved' || newData.val() === 'rejected'"
+        },
+        "dataDecisao": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/) && auth != null && auth.uid === 'HZ2txmi9fPVzDKvt5f5OomAi1B42'"
+        },
+        "decidedAt": {
+          ".validate": "newData.isNumber() && newData.val() === now && auth != null && auth.uid === 'HZ2txmi9fPVzDKvt5f5OomAi1B42'"
+        },
+        "decidedBy": {
+          ".validate": "auth != null && newData.val() === auth.uid && auth.uid === 'HZ2txmi9fPVzDKvt5f5OomAi1B42'"
+        },
+        "$other": {
+          ".validate": "data.exists() && newData.val() === data.val()"
+        }
+      }
+    }
+  }
+}

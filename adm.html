@@ -1,556 +1,204 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Administração | Staff ASW</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    
-    <style>
-        :root {
-            --bg-dark: #09090b;
-            --bg-panel: #141417;
-            --bg-card: #1c1c21;
-            --primary-color: #3b82f6;
-            --primary-hover: #2563eb;
-            --success: #10b981;
-            --success-hover: #059669;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --whatsapp: #25D366;
-            --border-color: #27272a;
-            --text-main: #f4f4f5;
-            --text-muted: #a1a1aa;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-dark); 
-            color: var(--text-main); 
-            padding: 40px 5%; 
-            min-height: 100vh;
-            letter-spacing: -0.01em;
-        }
-
-        /* TELA DE LOGIN PRIVADA */
-        .login-container {
-            max-width: 420px;
-            margin: 80px auto 0;
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-        .login-container h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #fff; }
-        .login-container p { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
-        .input-group { text-align: left; margin-bottom: 20px; width: 100%; }
-        label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.05em; }
-        
-        input, select { 
-            width: 100%; padding: 14px; border-radius: 6px; border: 1px solid var(--border-color); 
-            background: var(--bg-dark); color: #fff; font-size: 14px; transition: all 0.2s;
-        }
-        input:focus, select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
-
-        /* HEADER DO PAINEL */
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        h1 { font-size: 24px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 12px; }
-        
-        .btn-logout {
-            background: #1c1c21; color: var(--text-muted); border: 1px solid var(--border-color);
-            padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
-            display: flex; align-items: center; gap: 8px; transition: all 0.2s;
-        }
-        .btn-logout:hover { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); }
-
-        /* CONTROLE DE STATUS GLOBAL */
-        .status-controller-box {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            padding: 20px 24px;
-            border-radius: 10px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-        .status-info h4 { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px; }
-        .status-info p { font-size: 13px; color: var(--text-muted); }
-        
-        .select-wrapper { position: relative; width: auto; }
-        .status-select {
-            appearance: none;
-            -webkit-appearance: none;
-            padding: 12px 40px 12px 16px;
-            font-weight: 600;
-            cursor: pointer;
-            min-width: 220px;
-        }
-        .select-wrapper::after {
-            content: "\e292";
-            font-family: "Phosphor";
-            position: absolute; right: 14px; top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-muted);
-            pointer-events: none;
-            font-size: 16px;
-        }
-
-        /* NAVEGAÇÃO DE ABAS */
-        .tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 16px;
-        }
-        .tab-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-muted);
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .tab-btn:hover { background: var(--bg-panel); color: #fff; }
-        .tab-btn.active { background: var(--bg-panel); border-color: var(--border-color); color: #fff; }
-
-        /* BARRA DE FILTROS DE REGISTRO */
-        .filters-bar {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 24px;
-            background: var(--bg-panel);
-            padding: 16px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-        }
-        .filters-bar .input-group { margin-bottom: 0; flex: 1; }
-        .filters-bar input[type="date"] { color-scheme: dark; }
-
-        /* GRID E CARDS DE CANDIDATOS */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
-        .card { 
-            background: var(--bg-panel); border: 1px solid var(--border-color); padding: 28px; 
-            border-radius: 10px; position: relative; display: flex; flex-direction: column; transition: transform 0.2s, border-color 0.2s;
-        }
-        .card:hover { transform: translateY(-2px); border-color: #3f3f46; }
-        
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;}
-        .card h3 { font-size: 18px; font-weight: 600; color: #fff; }
-        
-        .status-badge {
-            font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-transform: uppercase;
-        }
-        .badge-approved { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .badge-rejected { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
-
-        .card .id-badge { 
-            font-family: monospace; font-size: 11px; background: rgba(56, 189, 248, 0.08); 
-            color: #38bdf8; padding: 4px 8px; border-radius: 4px; display: inline-block; 
-            margin-bottom: 20px; border: 1px solid rgba(56, 189, 248, 0.15); width: fit-content;
-            word-break: break-all;
-        }
-        
-        .card-info-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; flex-grow: 1; }
-        .info-item { display: flex; flex-direction: column; border-bottom: 1px solid #1f1f23; padding-bottom: 8px; }
-        .info-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.02em; }
-        .info-value { font-size: 14px; color: #e4e4e7; line-height: 1.5; }
-        .info-value code { background: var(--bg-dark); padding: 2px 6px; border-radius: 4px; border: 1px solid #27272a; font-size: 13px; color: #f4f4f5; word-break: break-all; }
-
-        .actions { display: flex; gap: 12px; margin-top: auto; flex-direction: column; }
-        .actions-row { display: flex; gap: 12px; width: 100%; }
-        
-        .btn { 
-            flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: 600; 
-            cursor: pointer; font-size: 14px; display: flex; align-items: center; 
-            justify-content: center; gap: 8px; transition: all 0.2s; text-decoration: none;
-        }
-        .btn-primary { background: var(--primary-color); color: #fff; width: 100%; margin-top: 8px;}
-        .btn-primary:hover { background: var(--primary-hover); }
-        
-        .btn-approve { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
-        .btn-approve:hover { background: var(--success); color: #fff; }
-        
-        .btn-reject { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
-        .btn-reject:hover { background: var(--danger); color: #fff; }
-
-        .btn-whatsapp { background: rgba(37, 211, 102, 0.1); color: var(--whatsapp); border: 1px solid rgba(37, 211, 102, 0.2); width: 100%; }
-        .btn-whatsapp:hover { background: var(--whatsapp); color: #fff; }
-        
-        .empty { color: var(--text-muted); font-size: 15px; grid-column: 1 / -1; text-align: center; padding: 60px 0; }
-        
-        #adminSection, #viewRegistros { display: none; }
-
-        /* RESPONSIVIDADE */
-        @media (max-width: 768px) {
-            body { padding: 20px 15px; }
-            .panel-header { flex-direction: column; align-items: flex-start; gap: 16px; }
-            h1 { font-size: 20px; }
-            .btn-logout { width: 100%; justify-content: center; }
-            .status-controller-box { flex-direction: column; align-items: stretch; gap: 16px; }
-            .select-wrapper, .status-select { width: 100%; min-width: 100%; }
-            .filters-bar { flex-direction: column; gap: 16px; }
-            .filters-bar .input-group { width: 100%; }
-            .grid { grid-template-columns: 1fr; }
-            .tabs { justify-content: space-between; }
-            .tab-btn { flex: 1; justify-content: center; padding: 10px; }
-        }
-    </style>
-</head>
-<body>
-
-    <div id="loginSection" class="login-container">
-        <h2>Área Restrita Admin</h2>
-        <p>Autentique-se para acessar os novos Pedidos.</p>
-        <form id="loginForm">
-            <div class="input-group">
-                <label>E-mail de Acesso</label>
-                <input type="email" id="loginEmail" required placeholder="staff@asphaltwolves.com">
-            </div>
-            <div class="input-group">
-                <label>Senha de Segurança</label>
-                <input type="password" id="loginPassword" required placeholder="••••••••">
-            </div>
-            <button type="submit" class="btn btn-primary"><i class="ph ph-sign-in"></i> Entrar no Painel</button>
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090e18" />
+    <meta name="robots" content="noindex" />
+    <title>Staff — Asphalt Wolves</title>
+    <link rel="icon" href="logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"
+    ></script>
+    <script type="module" src="assets/admin.js"></script>
+  </head>
+  <body class="admin-page">
+    <header class="site-header wrap">
+      <a class="brand" href="./"
+        ><img src="logo.png" width="46" height="46" alt="" /><span
+          >ASPHALT <b>WOLVES</b><small>PAINEL DA STAFF</small></span
+        ></a
+      ><a class="text-link" href="./">Ver site ↗</a
+      ><button class="button secondary small" id="logout" hidden>
+        Sair da conta ↗
+      </button>
+    </header>
+    <main class="wrap admin-main">
+      <section id="login-section" class="login-panel">
+        <p class="eyebrow">ACESSO DA DIRETORIA</p>
+        <h1>O PRÓXIMO PILOTO<br />COMEÇA AQUI.</h1>
+        <p class="muted">
+          Entre para gerenciar o recrutamento e conhecer os candidatos.
+        </p>
+        <form id="login-form">
+          <div class="field">
+            <label for="email">E-mail de acesso</label
+            ><input
+              type="email"
+              id="email"
+              autocomplete="username"
+              required
+              placeholder="seu@email.com"
+            />
+          </div>
+          <div class="field">
+            <label for="password">Senha</label
+            ><input
+              type="password"
+              id="password"
+              autocomplete="current-password"
+              required
+              placeholder="Sua senha de acesso"
+            />
+          </div>
+          <p id="login-error" class="error-message" role="alert"></p>
+          <button class="button" id="login-submit">Entrar no painel ↗</button>
         </form>
-    </div>
-
-    <div id="adminSection">
-        <div class="panel-header">
-            <h1>🐺 Painel Administrativo | ASW</h1>
-            <button class="btn-logout" onclick="fazerLogout()"><i class="ph ph-sign-out"></i> Desconectar</button>
+        <button class="text-link reset-link" id="reset-password">
+          Esqueci minha senha
+        </button>
+        <p id="reset-feedback" class="muted" role="status"></p>
+      </section>
+      <section id="admin-section" hidden>
+        <div class="admin-heading">
+          <div>
+            <p class="eyebrow">CENTRAL DE RECRUTAMENTO</p>
+            <h1>A PRÓXIMA GERAÇÃO<br />DA ALCATEIA.</h1>
+          </div>
+          <div class="connection">
+            <span class="status-dot"></span
+            ><span id="connection-label" role="status"
+              >Conectando ao Firebase…</span
+            >
+          </div>
         </div>
-        
-        <div class="status-controller-box">
-            <div class="status-info">
-                <h4>Status de Admissões</h4>
-                <p>Controle se o formulário público estará visível para novos candidatos.</p>
-            </div>
-            <div class="select-wrapper">
-                <select id="statusRecrutamento" class="status-select">
-                    <option value="aberto">🟢 Recrutamento Aberto</option>
-                    <option value="fechado">🔴 Recrutamento Fechado</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="tabs">
-            <button class="tab-btn active" id="tabPendentes" onclick="mudarAba('pendentes')">
-                <i class="ph ph-clock"></i> Pendentes
+        <section class="control-panel" aria-labelledby="control-title">
+          <div>
+            <p class="eyebrow">CONTROLE DE ADMISSÕES</p>
+            <h2 id="control-title">Consultando recrutamento…</h2>
+            <p id="control-description" class="muted">
+              Aguarde a confirmação do banco.
+            </p>
+            <p id="status-updated" class="privacy-note"></p>
+          </div>
+          <div class="control-actions">
+            <label for="recruitment-select"
+              >Recebimento de novas inscrições</label
+            ><select id="recruitment-select" disabled>
+              <option value="">Verificando…</option>
+              <option value="aberto">Aberto — receber inscrições</option>
+              <option value="fechado">
+                Fechado — pausar inscrições
+              </option></select
+            ><button class="button small" id="save-status" disabled>
+              Salvar alteração ↗
             </button>
-            <button class="tab-btn" id="tabRegistros" onclick="mudarAba('registros')">
-                <i class="ph ph-archive"></i> Registros
-            </button>
+            <p
+              id="save-feedback"
+              class="muted"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </div>
+        </section>
+        <div class="stats-grid">
+          <article>
+            <p class="eyebrow">EM ANÁLISE</p>
+            <strong id="count-pending">—</strong
+            ><span>À espera da diretoria</span>
+          </article>
+          <article>
+            <p class="eyebrow">APROVADOS</p>
+            <strong id="count-approved">—</strong
+            ><span>Novos caminhos na equipe</span>
+          </article>
+          <article>
+            <p class="eyebrow">RECUSADOS</p>
+            <strong id="count-rejected">—</strong
+            ><span>Processos concluídos</span>
+          </article>
         </div>
-        
-        <div id="viewPendentes">
-            <div class="grid" id="containerPedidos">
-                <p class="empty">Buscando novas aplicações ao vivo...</p>
+        <section
+          class="applications-section"
+          aria-labelledby="applications-title"
+        >
+          <div class="applications-heading">
+            <h2 id="applications-title">FICHAS DOS PILOTOS</h2>
+            <p id="record-count" class="muted" role="status"></p>
+          </div>
+          <div class="filter-bar">
+            <div class="tabs" role="group" aria-label="Filtrar inscrições">
+              <button data-filter="pending" aria-pressed="true">
+                Em análise</button
+              ><button data-filter="approved" aria-pressed="false">
+                Aprovados</button
+              ><button data-filter="rejected" aria-pressed="false">
+                Recusados</button
+              ><button data-filter="all" aria-pressed="false">Todos</button>
             </div>
-        </div>
-
-        <div id="viewRegistros">
-            <div class="filters-bar">
-                <div class="input-group">
-                    <label>Buscar Nome ou Discord</label>
-                    <input type="text" id="filtroTexto" placeholder="Ex: João, user#1234" onkeyup="aplicarFiltrosRegistros()">
-                </div>
-                <div class="input-group">
-                    <label>Data de Resposta</label>
-                    <input type="date" id="filtroData" onchange="aplicarFiltrosRegistros()">
-                </div>
-                <div class="input-group">
-                    <label>Status da Ficha</label>
-                    <div class="select-wrapper">
-                        <select id="filtroStatus" onchange="aplicarFiltrosRegistros()">
-                            <option value="todos">Todos os Status</option>
-                            <option value="approved">Apenas Aceitos</option>
-                            <option value="rejected">Apenas Recusados</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="field search-field">
+              <label class="sr-only" for="search">Buscar nome ou Discord</label
+              ><input
+                id="search"
+                type="search"
+                placeholder="Buscar nome ou Discord…"
+              />
             </div>
-
-            <div class="grid" id="containerRegistros">
-                <p class="empty">Carregando histórico de registros...</p>
+            <div class="field date-field">
+              <label class="sr-only" for="decision-date">Data da decisão</label
+              ><input
+                id="decision-date"
+                type="date"
+                aria-label="Data da decisão"
+              />
             </div>
-        </div>
-    </div>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDl5sbPsFkRCHht0_cFJv3OLTqzx1nlPqg",
-  authDomain: "recrutamento-asw.firebaseapp.com",
-  databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
-  projectId: "recrutamento-asw",
-  storageBucket: "recrutamento-asw.firebasestorage.app",
-  messagingSenderId: "1036486404644",
-  appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
-};
-
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const database = firebase.database();
-    const auth = firebase.auth();
-
-    let todosRegistros = []; 
-
-    auth.onAuthStateChanged((user) => {
-        const loginSection = document.getElementById('loginSection');
-        const adminSection = document.getElementById('adminSection');
-
-        if (user) {
-            loginSection.style.display = 'none';
-            adminSection.style.display = 'block';
-            inicializarControleStatus();
-            inicializarEscutaDados();
-            inicializarEscutaRegistros();
-        } else {
-            loginSection.style.display = 'block';
-            adminSection.style.display = 'none';
-        }
-    });
-
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-        const pass = document.getElementById('loginPassword').value;
-
-        auth.signInWithEmailAndPassword(email, pass)
-        .catch(err => {
-            if (err.code === 'auth/wrong-password') {
-                alert("Senha incorreta! Digite novamente.");
-            } else if (err.code === 'auth/user-not-found') {
-                alert("Este e-mail de administrador não foi encontrado.");
-            } else {
-                alert("Erro ao autenticar: " + err.message);
-            }
-        });
-    });
-
-    function fazerLogout() {
-        auth.signOut().then(() => window.location.reload());
-    }
-
-    function mudarAba(aba) {
-        document.getElementById('tabPendentes').classList.remove('active');
-        document.getElementById('tabRegistros').classList.remove('active');
-        document.getElementById('viewPendentes').style.display = 'none';
-        document.getElementById('viewRegistros').style.display = 'none';
-
-        if(aba === 'pendentes') {
-            document.getElementById('tabPendentes').classList.add('active');
-            document.getElementById('viewPendentes').style.display = 'block';
-        } else {
-            document.getElementById('tabRegistros').classList.add('active');
-            document.getElementById('viewRegistros').style.display = 'block';
-        }
-    }
-
-    function inicializarControleStatus() {
-        const configRef = database.ref('config');
-        configRef.on('value', (snapshot) => {
-            const config = snapshot.val();
-            if (config && config.status) {
-                document.getElementById('statusRecrutamento').value = config.status;
-            }
-        });
-
-        document.getElementById('statusRecrutamento').addEventListener('change', (e) => {
-            configRef.update({ status: e.target.value })
-            .catch(() => alert("Erro ao salvar alteração. Verifique suas permissões."));
-        });
-    }
-
-    function inicializarEscutaDados() {
-        database.ref('aplicacoes').orderByChild('status').equalTo('pending').on('value', (snapshot) => {
-            const container = document.getElementById('containerPedidos');
-            container.innerHTML = "";
-            const dados = snapshot.val();
-
-            if (!dados) {
-                container.innerHTML = '<p class="empty">Nenhum formulário aguardando resposta no momento.</p>';
-                return;
-            }
-
-            Object.keys(dados).forEach(id => {
-                const app = dados[id];
-                container.appendChild(criarCardHtml(id, app, true));
-            });
-        });
-    }
-
-    function inicializarEscutaRegistros() {
-        database.ref('aplicacoes').on('value', (snapshot) => {
-            todosRegistros = [];
-            snapshot.forEach(child => {
-                const app = child.val();
-                if (app.status === 'approved' || app.status === 'rejected') {
-                    app.id = child.key;
-                    todosRegistros.push(app);
-                }
-            });
-            todosRegistros.reverse(); 
-            aplicarFiltrosRegistros();
-        });
-    }
-
-    function aplicarFiltrosRegistros() {
-        const termo = document.getElementById('filtroTexto').value.toLowerCase();
-        const data = document.getElementById('filtroData').value; 
-        const status = document.getElementById('filtroStatus').value;
-        const container = document.getElementById('containerRegistros');
-
-        container.innerHTML = "";
-
-        const filtrados = todosRegistros.filter(app => {
-            const matchNomeDiscord = (app.nome && app.nome.toLowerCase().includes(termo)) || 
-                                     (app.discord && app.discord.toLowerCase().includes(termo));
-            
-            const matchData = data ? (app.dataDecisao === data) : true;
-            const matchStatus = status === 'todos' ? true : app.status === status;
-
-            return matchNomeDiscord && matchData && matchStatus;
-        });
-
-        if (filtrados.length === 0) {
-            container.innerHTML = '<p class="empty">Nenhum registro encontrado com estes filtros.</p>';
-            return;
-        }
-
-        filtrados.forEach(app => {
-            container.appendChild(criarCardHtml(app.id, app, false));
-        });
-    }
-
-    function criarCardHtml(id, app, isPendente) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        
-        let headerExtra = '';
-        let botoesAcao = '';
-        
-        // Gerando o botão do WhatsApp dinamicamente se houver número registrado
-        let btnWhatsapp = '';
-        if (app.whatsapp) {
-            btnWhatsapp = `
-                <a href="https://wa.me/55${app.whatsapp}" target="_blank" class="btn btn-whatsapp">
-                    <i class="ph ph-whatsapp-logo"></i> Contatar via WhatsApp
-                </a>
-            `;
-        }
-
-        if (!isPendente) {
-            const badgeClass = app.status === 'approved' ? 'badge-approved' : 'badge-rejected';
-            const badgeText = app.status === 'approved' ? 'Aceito' : 'Recusado';
-            const dataFormatada = app.dataDecisao ? app.dataDecisao.split('-').reverse().join('/') : 'Data não registrada';
-
-            headerExtra = `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
-            
-            botoesAcao = `
-                <div class="actions">
-                    ${btnWhatsapp}
-                </div>
-                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color); text-align: center;">
-                    <span style="font-size: 12px; color: var(--text-muted);"><i class="ph ph-calendar-check"></i> Decidido em: <strong>${dataFormatada}</strong></span>
-                </div>
-            `;
-        } else {
-            botoesAcao = `
-                <div class="actions">
-                    <div class="actions-row">
-                        <button class="btn btn-approve" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'approved')"><i class="ph ph-check"></i> Aceitar</button>
-                        <button class="btn btn-reject" onclick="decidir('${id}', '${app.nome || 'Candidato'}', 'rejected')"><i class="ph ph-x"></i> Recusar</button>
-                    </div>
-                    ${btnWhatsapp}
-                </div>
-            `;
-        }
-
-        card.innerHTML = `
-            <div class="card-header">
-                <h3>${app.nome || 'Sem Nome'}</h3>
-                ${headerExtra}
-            </div>
-            <div class="id-badge">ID: ${id}</div>
-            
-            <div class="card-info-list">
-                <div class="info-item">
-                    <span class="info-label">💬 Usuário Discord</span>
-                    <span class="info-value"><code>${app.discord || 'Não informado'}</code></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">📱 WhatsApp</span>
-                    <span class="info-value"><code>${app.whatsapp || 'Não informado'}</code></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">🎂 Idade & Horas de Jogo</span>
-                    <span class="info-value">${app.idade || '--'} anos / <strong>${app.horas || '0'}h</strong></span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">📅 Rotina Diária</span>
-                    <span class="info-value">${app.rotina || 'Não informada'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">⏰ Horários de Acesso</span>
-                    <span class="info-value">${app.horarios || 'Não informados'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">🛠️ Histórico Administrativo</span>
-                    <span class="info-value">${app.adm || 'Nenhum'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">🚀 Intenção de Liderança</span>
-                    <span class="info-value">${app.ajuda || 'Não'}</span>
-                </div>
-            </div>
-            ${botoesAcao}
-        `;
-        return card;
-    }
-
-    function decidir(id, nomeCandidato, novoStatus) {
-        const acaoTexto = novoStatus === 'approved' ? 'APROVAR' : 'RECUSAR';
-        const confirmar = confirm(`Tem certeza que deseja ${acaoTexto} a ficha de ${nomeCandidato}?`);
-        
-        if (!confirmar) return;
-
-        const dataAtual = new Date().toISOString().split('T')[0];
-
-        database.ref('aplicacoes/' + id).update({ 
-            status: novoStatus,
-            dataDecisao: dataAtual 
-        }).catch(err => {
-            alert("Erro ao atualizar dados. Verifique o console.");
-            console.error(err);
-        });
-    }
-</script>
-</body>
+          </div>
+          <p id="data-error" class="error-message" role="alert"></p>
+          <div id="applications" class="application-grid">
+            <p class="empty-state">Carregando fichas…</p>
+          </div>
+        </section>
+      </section>
+    </main>
+    <dialog id="decision-dialog" aria-labelledby="decision-title">
+      <div class="dialog-top">
+        <span class="eyebrow">ANÁLISE DE CANDIDATO</span
+        ><button
+          id="close-decision"
+          class="icon-button"
+          aria-label="Cancelar decisão"
+        >
+          ✕
+        </button>
+      </div>
+      <h2 id="decision-title">CONFIRMAR DECISÃO</h2>
+      <p id="decision-description" class="muted"></p>
+      <p id="decision-error" class="error-message" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="button secondary" id="cancel-decision">
+          Voltar à ficha</button
+        ><button class="button" id="confirm-decision">Confirmar</button>
+      </div>
+    </dialog>
+    <footer class="wrap footer">
+      <p>© 2026 Asphalt Wolves · Montes Developers</p>
+      <a href="./">Voltar ao portal ↗</a>
+    </footer>
+  </body>
 </html>
