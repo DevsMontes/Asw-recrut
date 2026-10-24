@@ -1,792 +1,498 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asphalt Wolves | Portal de Recrutamento</title>
-    <link rel="icon" type="image/png" href="logo.png">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
-    <style>
-        :root {
-            --bg-dark: #0a0a0a;
-            --bg-panel: #121212;
-            --bg-card: #171717;
-            --primary-color: #2563eb;
-            --primary-hover: #1d4ed8;
-            --border-color: #262626;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --transition-speed: 0.2s;
-            --status-green: #22c55e;
-            --status-green-bg: rgba(34, 197, 94, 0.1);
-            --status-red: #ef4444;
-            --status-red-bg: rgba(239, 68, 68, 0.1);
-            --status-alert: #f59e0b;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-dark); }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-up { animation: fadeIn 0.6s ease-out forwards; }
-
-        /* NAVBAR REFINADA */
-        .navbar {
-            width: 100%;
-            padding: 16px 5%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(10px);
-            position: fixed;
-            top: 0;
-            z-index: 1000;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .nav-logo { 
-            display: flex; align-items: center; gap: 12px; 
-            font-weight: 800; text-decoration: none; 
-            color: var(--text-main); font-size: 16px; 
-            letter-spacing: 0.5px; text-transform: uppercase;
-        }
-        .nav-logo img { width: 36px; border-radius: 4px; }
-
-        .nav-links { display: flex; align-items: center; gap: 24px; }
-        .nav-links a { 
-            text-decoration: none; color: var(--text-muted); 
-            font-size: 14px; font-weight: 500; transition: var(--transition-speed); 
-        }
-        .nav-links a:hover { color: var(--text-main); }
-
-        .btn-nav {
-            background: var(--primary-color);
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: var(--transition-speed);
-        }
-        .btn-nav:hover { background: var(--primary-hover); }
-
-        /* INDICADOR DE STATUS */
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--status-green-bg);
-            color: var(--status-green);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            margin-bottom: 24px;
-            transition: all 0.3s ease;
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: currentColor;
-            border-radius: 50%;
-            box-shadow: 0 0 8px currentColor;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(currentColor, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(currentColor, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(currentColor, 0); }
-        }
-
-        /* HERO SECTION */
-        .hero {
-            padding: 160px 20px 100px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            background: radial-gradient(circle at top, #1a2035 0%, var(--bg-dark) 40%);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .hero-content { max-width: 700px; }
-
-        .badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: var(--bg-card); color: var(--text-muted);
-            padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
-            border: 1px solid var(--border-color);
-        }
-
-        .hero h1 { 
-            font-size: clamp(32px, 6vw, 56px); line-height: 1.1; 
-            margin-bottom: 24px; font-weight: 800; letter-spacing: -1px;
-        }
-        
-        .hero p { 
-            font-size: 16px; color: var(--text-muted); margin-bottom: 40px; 
-            line-height: 1.6; max-width: 600px; margin-left: auto; margin-right: auto;
-        }
-
-        .hero-btns { display: flex; gap: 16px; justify-content: center; }
-        .btn-primary, .btn-secondary { 
-            padding: 12px 24px; border-radius: 4px; text-decoration: none; 
-            font-weight: 600; transition: var(--transition-speed); display: flex; 
-            align-items: center; gap: 8px; cursor: pointer; border: none; font-size: 14px; 
-        }
-        .btn-primary { background: var(--primary-color); color: #fff; }
-        .btn-primary:hover { background: var(--primary-hover); }
-        .btn-secondary { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); }
-        .btn-secondary:hover { background: #262626; }
-
-        /* CONTEÚDO PRINCIPAL */
-        .container { width: 100%; max-width: 1000px; margin: 80px auto; padding: 0 20px; }
-
-        .section-title { margin-bottom: 32px; text-align: left; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
-        .section-title span { color: var(--primary-color); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px; }
-        .section-title h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
-
-        /* CARDS E GRIDS */
-        .info-box { margin-bottom: 80px; }
-        .info-box p { color: var(--text-muted); line-height: 1.6; font-size: 15px; }
-
-        .grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 80px; }
-        .card-item { 
-            background: var(--bg-panel); padding: 32px; border-radius: 6px; 
-            border: 1px solid var(--border-color); transition: var(--transition-speed); 
-        }
-        .card-item:hover { border-color: var(--primary-color); }
-        .icon-box { 
-            color: var(--text-main); font-size: 24px; margin-bottom: 16px; 
-        }
-        .card-item h4 { font-size: 18px; margin-bottom: 12px; font-weight: 600; }
-        .card-item p { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
-
-        /* FAQ ACCORDION */
-        .faq-section { margin-bottom: 80px; }
-        .faq-section details { margin-bottom: 12px; }
-        .faq-item { 
-            background: var(--bg-panel); border: 1px solid var(--border-color); 
-            border-radius: 6px; overflow: hidden; 
-        }
-        .faq-summary { 
-            padding: 18px 20px; font-weight: 600; cursor: pointer; display: flex; 
-            justify-content: space-between; align-items: center; list-style: none; 
-            user-select: none; transition: background 0.2s; font-size: 15px;
-        }
-        .faq-summary::-webkit-details-marker { display: none; }
-        .faq-summary:hover { background: #1a1a1a; }
-        .faq-content { 
-            padding: 0 20px 18px; color: var(--text-muted); font-size: 14px; 
-            line-height: 1.6; border-top: 1px solid transparent; 
-        }
-        details[open] .faq-summary { border-bottom: 1px solid var(--border-color); color: var(--primary-color); }
-        details[open] .faq-content { padding-top: 18px; }
-
-        /* PARCERIAS */
-        .social-btns { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 24px; }
-        .social-btn { 
-            padding: 12px 20px; border-radius: 4px; text-decoration: none; font-size: 14px;
-            font-weight: 600; display: flex; align-items: center; gap: 8px; 
-            color: var(--text-main); border: 1px solid var(--border-color); background: var(--bg-panel);
-            transition: var(--transition-speed);
-        }
-        .social-btn:hover { background: #262626; }
-        .social-btn i { font-size: 18px; }
-
-        /* MODAL DO FORMULÁRIO */
-        .modal-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); 
-            z-index: 2000; display: flex; align-items: center; justify-content: center; 
-            opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 20px; 
-        }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        
-        .modal-content { 
-            background: var(--bg-panel); border: 1px solid var(--border-color); 
-            border-radius: 8px; padding: 40px; width: 100%; max-width: 600px; 
-            max-height: 90vh; overflow-y: auto; position: relative; 
-            transform: translateY(20px); transition: all 0.3s ease; 
-        }
-        .modal-overlay.active .modal-content { transform: translateY(0); }
-
-        .btn-close { 
-            position: absolute; top: 20px; right: 20px; background: none; 
-            border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; 
-        }
-        .btn-close:hover { color: var(--text-main); }
-
-        .modal-content h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-        .form-estimated-time { font-size: 13px; color: var(--status-alert); margin-bottom: 24px; display: flex; align-items: center; gap: 6px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); font-weight: 500;}
-
-        .input-group { margin-bottom: 20px; }
-        label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-        input, textarea, select { 
-            width: 100%; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color); 
-            background: var(--bg-dark); color: var(--text-main); font-family: inherit; font-size: 14px; 
-            transition: var(--transition-speed);
-        }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary-color); background: #000; }
-        
-        .checkbox-group { display: flex; align-items: flex-start; gap: 12px; margin-top: 24px; background: var(--bg-dark); padding: 16px; border-radius: 4px; border: 1px solid var(--border-color); }
-        .checkbox-group input { width: auto; margin-top: 2px; cursor: pointer; }
-        .checkbox-group label { text-transform: none; font-size: 13px; color: var(--text-muted); font-weight: 400; line-height: 1.4; margin: 0; cursor: pointer; }
-
-        .spinner { 
-            border: 3px solid var(--border-color); border-top-color: var(--primary-color); 
-            border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 0 auto; 
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* AJUSTES RESPONSIVOS */
-        @media (max-width: 768px) {
-            .navbar { flex-direction: column; gap: 12px; padding: 12px 20px; }
-            .nav-links { width: 100%; justify-content: center; flex-wrap: wrap; gap: 12px 20px; }
-            .nav-links a { font-size: 13px; }
-            .btn-nav { padding: 6px 12px; font-size: 12px; }
-            
-            .hero { padding: 140px 20px 60px; }
-            .hero h1 { font-size: 28px; }
-            .grid-layout { grid-template-columns: 1fr; }
-            .hero-btns { flex-direction: column; width: 100%; }
-            .modal-content { padding: 24px; }
-            
-            .two-cols { grid-template-columns: 1fr !important; }
-        }
-    </style>
-</head>
-<body>
-
-    <nav class="navbar">
-        <a href="#" class="nav-logo">
-            <img src="logo.png" alt="Logo ASW" onerror="this.style.display='none'"> <span>Asphalt Wolves</span>
-        </a>
-        <div class="nav-links">
-            <a href="#sobre">Sobre</a>
-            <a href="#requisitos">Requisitos</a>
-            <a href="#faq">Dúvidas</a>
-            <a href="#parcerias">Parcerias</a>
-            <button onclick="abrirModal()" class="btn-nav">Aplicar Vaga</button>
-        </div>
-    </nav>
-
-    <header class="hero">
-        <div class="hero-content animate-fade-up">
-            <div id="hero-status-indicator" class="status-indicator">
-                <div class="status-dot"></div> <span id="hero-status-text">Recrutamento Aberto</span>
-            </div>
-            <br>
-            <span class="badge"><i class="ph-bold ph-steering-wheel"></i> Portal CPM2</span>
-            <h1>Recrutamento Oficial<br>Asphalt Wolves</h1>
-            <p>Processo seletivo aberto. Buscamos motoristas dedicados para compor nossa equipe no Car Parking Multiplayer 2. Avaliamos disciplina, maturidade e histórico.</p>
-            <div class="hero-btns">
-                <button onclick="abrirModal()" class="btn-primary">Iniciar Aplicação</button>
-                <a href="#requisitos" class="btn-secondary">Ler Diretrizes</a>
-            </div>
-        </div>
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090e18" />
+    <meta
+      name="description"
+      content="Asphalt Wolves: encontros, drift e respeito no Car Parking Multiplayer 2. Conheça a equipe e acompanhe o recrutamento oficial."
+    />
+    <title>Asphalt Wolves — Encontre sua alcateia</title>
+    <link rel="icon" href="logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"
+    ></script>
+    <script
+      defer
+      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"
+    ></script>
+    <script type="module" src="assets/public.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site-header wrap">
+      <a class="brand" href="./" aria-label="Asphalt Wolves, início"
+        ><img src="logo.png" alt="" width="46" height="46" /><span
+          >ASPHALT <b>WOLVES</b><small>CAR PARKING MULTIPLAYER 2</small></span
+        ></a
+      >
+      <nav aria-label="Navegação principal">
+        <a href="#alcateia">A alcateia</a><a href="#requisitos">Requisitos</a
+        ><a href="#duvidas">Dúvidas</a>
+      </nav>
+      <button class="button small" data-apply disabled>
+        Verificando vagas… <span aria-hidden="true">↗</span>
+      </button>
     </header>
-
-    <div class="container">
-        
-        <div id="sobre" class="info-box animate-fade-up">
-            <div class="section-title">
-                <span>Visão Geral</span>
-                <h2>Sobre a Organização</h2>
-            </div>
-            <p>A Asphalt Wolves atua no <strong>Car Parking Multiplayer 2</strong> focada na organização de eventos, simulação de roles organizados e competições internas. Nosso processo de triagem garante que apenas perfis que se alinham com nossa filosofia de respeito e imersão integrem a equipe principal.</p>
+    <main id="conteudo">
+      <section class="hero wrap" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">
+            <span class="slash">//</span> MAIS QUE UMA TAG. UMA EQUIPE.
+          </p>
+          <h1 id="hero-title">
+            A ESTRADA É<br />MELHOR EM<br /><em>ALCATEIA.</em>
+          </h1>
+          <p class="hero-description">
+            O asfalto nos conecta. O respeito nos mantém juntos. Encontre seu
+            lugar na Asphalt Wolves e viva o CPM2 com quem tem a mesma paixão.
+          </p>
+          <div class="hero-actions">
+            <button class="button" data-apply disabled>
+              Verificando vagas… <span aria-hidden="true">↗</span></button
+            ><a class="text-link" href="#alcateia"
+              >Conheça a equipe <span aria-hidden="true">↓</span></a
+            >
+          </div>
+          <p class="hero-footnote">
+            DRIFT <span>•</span> ROLEPLAY <span>•</span> ENCONTROS
+            <span>•</span> COMUNIDADE
+          </p>
         </div>
-
-        <div id="requisitos" class="section-title animate-fade-up">
-            <div class="section-title">
-                <span>Critérios de Seleção</span>
-                <h2>Requisitos Mínimos</h2>
-            </div>
+        <div class="hero-art" aria-hidden="true">
+          <img src="fundo.png" alt="" fetchpriority="high" /><span
+            class="art-coordinates"
+            >ASW / BRASIL<br />JUNTOS NA PRÓXIMA CURVA</span
+          ><span class="art-number">01 / ASW</span>
         </div>
-
-        <div class="grid-layout animate-fade-up">
-            <div class="card-item">
-                <div class="icon-box"><i class="ph ph-clock"></i></div>
-                <h4>Experiência (10h+)</h4>
-                <p>Tempo de jogo necessário para garantir domínio das mecânicas, economia interna e física dos veículos.</p>
-            </div>
-            <div class="card-item">
-                <div class="icon-box"><i class="ph ph-user-circle"></i></div>
-                <h4>Perfil Adulto (15+)</h4>
-                <p>Exigimos maturidade na comunicação. Os canais de voz são restritos para manter o ambiente focado e respeitoso.</p>
-            </div>
-            <div class="card-item">
-                <div class="icon-box"><i class="ph ph-calendar-check"></i></div>
-                <h4>Disponibilidade</h4>
-                <p>Comprometimento com cronogramas de encontros oficiais, treinamentos de drift e eventos de equipe.</p>
-            </div>
-            <div class="card-item">
-                <div class="icon-box"><i class="ph ph-identification-card"></i></div>
-                <h4>Identificação ASW</h4>
-                <p>Uso obrigatório da tag "Asw_" no registro de piloto do jogo assim que a admissão for aprovada pela diretoria.</p>
-            </div>
+      </section>
+      <section
+        class="recruitment-strip wrap"
+        aria-label="Situação do recrutamento"
+      >
+        <div>
+          <p class="eyebrow">SEU PRÓXIMO CAPÍTULO</p>
+          <div
+            id="recruitment-status"
+            class="live-status"
+            data-state="checking"
+            role="status"
+            aria-live="polite"
+          >
+            <span class="status-dot"></span
+            ><strong id="status-label">Consultando recrutamento</strong>
+          </div>
         </div>
-
-        <div id="faq" class="faq-section animate-fade-up">
-            <div class="section-title">
-                <span>Central de Dúvidas</span>
-                <h2>Perguntas Frequentes</h2>
-            </div>
-            
-            <details class="faq-item">
-                <summary class="faq-summary">Quanto tempo demora a análise do formulário? <i class="ph ph-caret-down"></i></summary>
-                <div class="faq-content">Nossa diretoria costuma avaliar as aplicações em algumas horas. Após enviar o formulário, você poderá acionar nosso suporte via WhatsApp para acompanhar o status.</div>
-            </details>
-            
-            <details class="faq-item">
-                <summary class="faq-summary">Ainda não tenho 10 horas de jogo, posso me inscrever? <i class="ph ph-caret-down"></i></summary>
-                <div class="faq-content">No momento, nosso sistema bloqueia automaticamente registros que não atingem os requisitos mínimos de horas ou idade. Isso garante que todos os membros tenham o mesmo nível de imersão nos eventos. Recomendamos jogar mais um pouco e retornar depois!</div>
-            </details>
-
-            <details class="faq-item">
-                <summary class="faq-summary">Como funcionam os eventos e encontros? <i class="ph ph-caret-down"></i></summary>
-                <div class="faq-content">Organizamos encontros semanais focados em simulação (Roleplay), campeonatos de drift, exposições de veículos e viagens em comboio. Tudo coordenado pelos nossos canais de voz no Discord.</div>
-            </details>
+        <p id="status-description">
+          Aguarde a confirmação do status da equipe.
+        </p>
+        <button class="text-link" id="track-button" hidden>
+          Acompanhar minha inscrição ↗</button
+        ><a
+          class="text-link"
+          href="https://discord.gg/K9j5v45R"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Entre no Discord ↗</a
+        >
+      </section>
+      <section class="section wrap" id="alcateia">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">01 / ALCATEIA</p>
+            <h2>A MESMA PAIXÃO.<br />UM SÓ DESTINO.</h2>
+          </div>
+          <p>
+            Somos uma equipe de Car Parking Multiplayer 2 que valoriza presença,
+            parceria e respeito. Do primeiro encontro ao último comboio, aqui
+            todo piloto faz parte.
+          </p>
         </div>
-
-        <div id="parcerias" class="info-box animate-fade-up" style="margin-bottom: 40px;">
-            <div class="section-title">
-                <span>Relações Externas</span>
-                <h2>Contato e Parcerias</h2>
-            </div>
-            <p>Representantes de outras equipes interessados em crescer seus membros ou equipe, podem entrar em contato por meio dos nossos canais oficiais.</p>
-            
-            <div class="social-btns">
-                <a href="https://wa.me/5577988773155" target="_blank" class="social-btn"><i class="ph ph-whatsapp-logo"></i> Contato de contratos</a>
-                <a href="https://discord.gg/K9j5v45R" target="_blank" class="social-btn"><i class="ph ph-discord-logo"></i> Servidor Discord</a>
-                <a href="https://www.instagram.com/asphaltwolves.ofc?igsh=MXdjN2lwZTdjdjFhZg==" target="_blank" class="social-btn"><i class="ph ph-instagram-logo"></i> Instagram Oficial</a>
-                <a href="https://www.instagram.com/montes.dev?igsh=MXZod2Q2Y3d0aGdmbA==" target="_blank" class="social-btn"><i class="ph ph-instagram-logo"></i> Desenvolvedores do Site</a>
-            </div>
+        <div class="feature-grid">
+          <article class="feature">
+            <span class="feature-icon" aria-hidden="true">↗</span>
+            <p class="eyebrow">NA PISTA</p>
+            <h3>Encontros que conectam</h3>
+            <p>
+              Comboios, exposições e roleplay com organização para aproveitar
+              cada quilômetro.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature-icon" aria-hidden="true">⌁</span>
+            <p class="eyebrow">NA CURVA</p>
+            <h3>Evolução em equipe</h3>
+            <p>
+              Treinos de drift, troca de experiências e espaço para crescer ao
+              lado de outros pilotos.
+            </p>
+          </article>
+          <article class="feature">
+            <span class="feature-icon" aria-hidden="true">◎</span>
+            <p class="eyebrow">NA CONVIVÊNCIA</p>
+            <h3>Respeito vem primeiro</h3>
+            <p>
+              Uma comunidade com comunicação madura, compromisso e apoio dentro
+              e fora do jogo.
+            </p>
+          </article>
         </div>
-
-    </div>
-
-    <div id="modalOverlay" class="modal-overlay" onclick="fecharModalFora(event)">
-        <div class="modal-content" id="modalContent" onclick="event.stopPropagation()">
-            <button class="btn-close" onclick="fecharModal()"><i class="ph ph-x"></i></button>
-            
-            <div id="formArea">
-                <h3>Formulário de Aplicação</h3>
-                <div class="form-estimated-time"><i class="ph ph-timer"></i> Tempo estimado de preenchimento: 2 minutos</div>
-                
-                <form id="recruitForm">
-                    <div class="input-group">
-                        <label>Nome Real / Nickname no CPM2</label>
-                        <input type="text" id="nome_game" required placeholder="Ex: Carlos / Asw_King">
-                    </div>
-
-                    <div class="two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="input-group">
-                            <label>Usuário do Discord (Tag)</label>
-                            <input type="text" id="discord_tag" required placeholder="Ex: carlos_asw">
-                        </div>
-                        <div class="input-group">
-                            <label>WhatsApp (com DDD)</label>
-                            <input type="tel" id="whatsapp" required placeholder="Ex: 11988887777">
-                        </div>
-                    </div>
-
-                    <div class="two-cols" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="input-group">
-                            <label>Idade Atual</label>
-                            <input type="number" id="age" min="1" required placeholder="Ex: 18">
-                        </div>
-                        <div class="input-group">
-                            <label>Horas Registradas (CPM2)</label>
-                            <input type="number" id="hours" min="0" required placeholder="Ex: 50">
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Ocupação Atual</label>
-                        <input type="text" id="rotina" required placeholder="Ex: Trabalho de manhã, estudo à noite">
-                    </div>
-
-                    <div class="input-group">
-                        <label>Disponibilidade de Horário</label>
-                        <input type="text" id="horarios" required placeholder="Ex: Seg a Sex após as 20h">
-                    </div>
-
-                    <div class="input-group">
-                        <label>Histórico em Outras Equipes</label>
-                        <input type="text" id="adm_exp" required placeholder="Cite equipes anteriores ou justifique se for a primeira">
-                    </div>
-
-                    <div class="input-group">
-                        <label>Perfil de Engajamento</label>
-                        <select id="compromisso" required>
-                            <option value="">Selecione sua intenção...</option>
-                            <option value="Sim">Perfil Liderança: Quero ajudar a organizar e gerenciar a equipe.</option>
-                            <option value="Não">Perfil Piloto: Focarei apenas em participar dos eventos.</option>
-                        </select>
-                    </div>
-
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="termos" required>
-                        <label for="termos">Declaro que as informações são verdadeiras, concordo com as regras corporativas e autorizo o registro de IP por segurança.</label>
-                    </div>
-
-                    <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 24px; padding: 14px;">Submeter Aplicação</button>
-                </form>
-            </div>
-
-            <div id="loadingArea" style="display:none; text-align: center; padding: 40px 0;">
-                <div class="spinner"></div>
-                <h4 style="margin-top: 20px; font-size: 16px; font-weight: 600;">Processando Dados...</h4>
-                <p style="color: var(--text-muted); font-size: 13px; margin-top: 8px;">Por favor, não feche esta janela.</p>
-            </div>
-
-            <div id="resultArea" style="display:none; text-align: center; padding: 30px 0;">
-            </div>
+      </section>
+      <section class="requirements section" id="requisitos">
+        <div class="wrap requirements-grid">
+          <div>
+            <p class="eyebrow">02 / ANTES DE ACELERAR</p>
+            <h2>VOCÊ TEM<br />O NOSSO RITMO?</h2>
+            <p class="section-intro">
+              Não procuramos o carro mais caro.<br />Procuramos quem soma à
+              equipe.
+            </p>
+            <button class="button secondary" data-apply disabled>
+              Verificando vagas… ↗
+            </button>
+          </div>
+          <div class="requirement-list">
+            <article>
+              <span class="requirement-number">15<span>+</span></span>
+              <div>
+                <h3>Anos de idade</h3>
+                <p>
+                  Maturidade para manter um ambiente acolhedor e respeitoso.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span class="requirement-number">10<span>h+</span></span>
+              <div>
+                <h3>Experiência no CPM2</h3>
+                <p>
+                  Conheça as mecânicas do jogo e esteja pronto para os
+                  encontros.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span class="requirement-symbol" aria-hidden="true">↗</span>
+              <div>
+                <h3>Presença e compromisso</h3>
+                <p>
+                  Combine seus horários com a equipe e participe dos eventos.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span class="requirement-symbol">ASW</span>
+              <div>
+                <h3>Orgulho de fazer parte</h3>
+                <p>
+                  Depois da aprovação, use a tag Asw_ no seu nome de piloto.
+                </p>
+              </div>
+            </article>
+          </div>
         </div>
-    </div>
-
-  <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDl5sbPsFkRCHht0_cFJv3OLTqzx1nlPqg",
-            authDomain: "recrutamento-asw.firebaseapp.com",
-            databaseURL: "https://recrutamento-asw-default-rtdb.firebaseio.com",
-            projectId: "recrutamento-asw",
-            storageBucket: "recrutamento-asw.firebasestorage.app",
-            messagingSenderId: "1036486404644",
-            appId: "1:1036486404644:web:02a9a23e69ef0b91b906b1"
-        };
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const database = firebase.database();
-
-        // ==========================================
-        // MONITOR DE STATUS DO RECRUTAMENTO (REALTIME)
-        // ==========================================
-        database.ref('config').on('value', (snapshot) => {
-            const config = snapshot.val();
-            const idSalvo = localStorage.getItem('idFichaAsphalt');
-            const statusSalvo = localStorage.getItem('statusFichaAsphalt');
-
-            // 1. ATUALIZAR A BADGE VISUAL DA PÁGINA INICIAL
-            const heroIndicator = document.getElementById('hero-status-indicator');
-            const heroText = document.getElementById('hero-status-text');
-
-            if (config && config.status === 'fechado') {
-                if (heroIndicator && heroText) {
-                    heroText.innerText = "Recrutamento Fechado";
-                    heroIndicator.style.color = "var(--status-red)";
-                    heroIndicator.style.backgroundColor = "var(--status-red-bg)";
-                    heroIndicator.style.borderColor = "rgba(239, 68, 68, 0.2)";
-                    
-                    // Paralisa a animação da bolinha e deixa vermelha
-                    const dot = heroIndicator.querySelector('.status-dot');
-                    if(dot) dot.style.animation = "none";
-                }
-
-                // 2. CONTROLAR O BLOQUEIO DO FORMULÁRIO / MODAL
-                if (!idSalvo || statusSalvo === 'rejected') {
-                    if (typeof abrirModal === "function") {
-                        abrirModal(); 
-                    }
-
-                    const modalTitle = document.querySelector('#formArea h3');
-                    const modalDesc = document.querySelector('.form-estimated-time');
-                    const recruitForm = document.getElementById('recruitForm');
-
-                    if (modalTitle) modalTitle.innerText = "Recrutamento Fechado!";
-                    if (modalDesc) {
-                        modalDesc.innerHTML = `<i class="ph ph-lock-keyhole" style="color: var(--status-red); font-size: 18px;"></i> As vagas para a Asphalt Wolves estão encerradas no momento.`;
-                        modalDesc.style.color = "var(--text-muted)";
-                    }
-                    if (recruitForm) {
-                        recruitForm.innerHTML = `<p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 24px;">Fique atento ao nosso Discord oficial para saber quando o próximo recrutamento começará!</p>
-                        <button type="button" class="btn-secondary" onclick="fecharModal()" style="width: 100%; justify-content: center;">Voltar para o site</button>`;
-                    }
-                }
-            } else {
-                // VOLTAR PARA ABERTO
-                if (heroIndicator && heroText) {
-                    heroText.innerText = "Recrutamento Aberto";
-                    heroIndicator.style.color = "var(--status-green)";
-                    heroIndicator.style.backgroundColor = "var(--status-green-bg)";
-                    heroIndicator.style.borderColor = "rgba(34, 197, 94, 0.2)";
-                    
-                    // Restaura a animação da bolinha
-                    const dot = heroIndicator.querySelector('.status-dot');
-                    if(dot) dot.style.animation = "pulse 2s infinite";
-                }
-            }
-        });
-    </script>
-    <script>
-        let timerInterval = null; 
-        const STORAGE_KEY = "asw_status";
-        const APP_ID_KEY = "asw_id";
-
-        let memoriaStatus = null;
-        let memoriaId = null;
-
-        function safeSetItem(key, val) {
-            try { localStorage.setItem(key, val); } catch(e) {}
-            if(key === STORAGE_KEY) memoriaStatus = val;
-            if(key === APP_ID_KEY) memoriaId = val;
-        }
-
-        function safeGetItem(key) {
-            try { return localStorage.getItem(key); } catch(e) {}
-            if(key === STORAGE_KEY) return memoriaStatus;
-            if(key === APP_ID_KEY) return memoriaId;
-            return null;
-        }
-
-        function abrirModal() { document.getElementById('modalOverlay').classList.add('active'); }
-        function fecharModal() { document.getElementById('modalOverlay').classList.remove('active'); }
-        function fecharModalFora(e) { fecharModal(); }
-        
-        function mostrarResultado(icone, cor, titulo, desc) {
-            const area = document.getElementById("resultArea");
-            document.getElementById("formArea").style.display = "none";
-            document.getElementById("loadingArea").style.display = "none";
-            area.style.display = "block";
-            area.innerHTML = `
-                <i class="${icone}" style="font-size: 48px; color: ${cor}; margin-bottom: 16px;"></i>
-                <h3>${titulo}</h3>
-                <div style="color: var(--text-muted); margin-top: 12px; font-size: 14px; line-height: 1.6;">${desc}</div>
-            `;
-        }
-        
-        function mostrarTelaAguardando() {
-            mostrarResultado(
-                "ph ph-hourglass-high", 
-                "var(--status-alert)", 
-                "Inscrição Enviada!", 
-                `Sua ficha está na fila de análise da diretoria. Não feche o site, o resultado sairá aqui em tempo real.<br><br>
-                <a href="https://wa.me/5577988773155?text=Olá!%20Enviei%20minha%20inscrição%20no%20portal%20Asphalt%20Wolves%20e%20estou%20na%20tela%20de%20espera." 
-                   target="_blank" 
-                   class="btn-secondary" 
-                   style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; gap: 8px; border-color: #22c55e; color: #22c55e; margin-top: 10px; font-weight: 600;">
-                    <i class="ph ph-whatsapp-logo" style="font-size:18px;"></i> Falar com o Suporte (WhatsApp)
-                </a>`
-            );
-        }
-        
-        function checarStatusAoVivo(id) {
-            if (!id) return;
-
-            const referenciaFicha = database.ref('aplicacoes/' + id);
-
-            referenciaFicha.on('value', (snapshot) => {
-                const dados = snapshot.val();
-                if (dados) processarResultadoFicha(id, dados);
-            }, (error) => {
-                acionarChecagemManualFallback(id);
-            });
-
-            function acionarChecagemManualFallback(idFicha) {
-                if (timerInterval) clearInterval(timerInterval);
-                
-                timerInterval = setInterval(() => {
-                    referenciaFicha.get().then((snapshot) => {
-                        const dados = snapshot.val();
-                        if (dados) processarResultadoFicha(idFicha, dados);
-                    });
-                }, 4000);
-            }
-        }
-
-        function processarResultadoFicha(id, dados) {
-            if (!dados || !dados.status) return;
-
-            if (dados.status === 'approved') {
-                if (timerInterval) clearInterval(timerInterval);
-                database.ref('aplicacoes/' + id).off();
-
-                abrirModal(); 
-                
-                const modalOverlay = document.getElementById('modalOverlay');
-                if (modalOverlay) {
-                    modalOverlay.innerHTML = `
-                        <div class="modal-content" style="text-align: center; padding: 30px; background: #121212; border: 1px solid #262626; border-radius: 12px; max-width: 450px; margin: auto;">
-                            <i class="ph ph-check-circle" style="font-size: 54px; color: #22c55e; margin-bottom: 16px;"></i>
-                            <h3 style="font-size: 24px; margin-bottom: 15px; color: #ffffff;">Aprovado!</h3>
-                            <div style="color: #94a3b8; margin-top: 12px; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-                                Parabéns! Sua aplicação foi aprovada pela Admin da Asphalt Wolves.<br><br>
-                                Clique no botão abaixo para resgatar o seu convite oficial e entrar na comunidade:
-                            </div>
-                            <a href="https://chat.whatsapp.com/BlfeXFuGZ6N3PqbWtOdedY" target="_blank" class="btn-primary" style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; background-color: #22c55e; border-color: #22c55e; color: #ffffff; border-radius: 6px; font-weight: bold; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);">
-                                <i class="ph ph-whatsapp-logo" style="font-size:18px; margin-right:8px;"></i> Entrar na Comunidade
-                            </a>
-                        </div>
-                    `;
-                }
-                
-                localStorage.removeItem(STORAGE_KEY);
-                localStorage.removeItem(APP_ID_KEY);
-                
-            } else if (dados.status === 'rejected') {
-                if (timerInterval) clearInterval(timerInterval);
-                database.ref('aplicacoes/' + id).off();
-
-                abrirModal(); 
-                
-                const modalOverlay = document.getElementById('modalOverlay');
-                if (modalOverlay) {
-                    modalOverlay.innerHTML = `
-                        <div class="modal-content" style="text-align: center; padding: 30px; background: #121212; border: 1px solid #262626; border-radius: 12px; max-width: 450px; margin: auto;">
-                            <i class="ph ph-x-circle" style="font-size: 54px; color: #ef4444; margin-bottom: 16px;"></i>
-                            <h3 style="font-size: 24px; margin-bottom: 15px; color: #ffffff;">Inscrição Recusada</h3>
-                            <div style="color: #94a3b8; margin-top: 12px; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-                                Infelizmente, sua aplicação não foi aprovada pela diretoria do Asphalt Wolves neste momento.<br><br>
-                                Agradecemos o seu interesse. Você poderá tentar enviar um novo formulário em um próximo recrutamento.
-                            </div>
-                            <a href="https://wa.me/5577988773155?text=Olá!%20Minha%20inscrição%20foi%20recusada%20no%20portal%20Asphalt%20Wolves" 
-                               target="_blank" 
-                               class="btn-secondary" 
-                               style="display: inline-flex; text-decoration: none; justify-content: center; width: 100%; padding: 14px; gap: 8px; border: 1px solid #ef4444; color: #ef4444; border-radius: 6px; font-weight: 600;">
-                                <i class="ph ph-question" style="font-size:18px;"></i> Tirar Dúvidas com o Suporte
-                            </a>
-                        </div>
-                    `;
-                }
-                
-                localStorage.removeItem(STORAGE_KEY);
-                localStorage.removeItem(APP_ID_KEY);
-            }
-        }
-
-        window.addEventListener("DOMContentLoaded", () => {
-            const statusSalvo = safeGetItem(STORAGE_KEY);
-            const idSalvo = safeGetItem(APP_ID_KEY);
-
-            if (statusSalvo === "aguardando" && idSalvo) {
-                abrirModal();
-                mostrarTelaAguardando();
-                checarStatusAoVivo(idSalvo);
-            } else if (statusSalvo === "rejected") {
-                document.getElementById("recruitForm").addEventListener("click", (e) => {
-                     e.preventDefault();
-                     mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos em tentativas anteriores.");
-                });
-            }
-        });
-
-        // ENVIO DO FORMULÁRIO COM WHATSAPP
-        document.getElementById("recruitForm").addEventListener("submit", function(e){
-            e.preventDefault();
-
-            const idade = parseInt(document.getElementById("age").value);
-            const horas = parseInt(document.getElementById("hours").value);
-            
-            // Pega o WhatsApp e remove traços/espaços usando Regex
-            const whatsappBruto = document.getElementById("whatsapp").value;
-            const numeroWhatsapp = whatsappBruto.replace(/[^0-9]/g, '');
-
-            const passouRequisitos = (idade >= 15 && horas >= 10);
-
-            if (!passouRequisitos) {
-                safeSetItem(STORAGE_KEY, "rejected");
-                mostrarResultado("ph ph-x-circle", "#ef4444", "Sistema Bloqueado", "Os requisitos mínimos não foram atingidos.");
-                return;
-            }
-
-            document.getElementById("formArea").style.display = "none";
-            document.getElementById("loadingArea").style.display = "block";
-
-            const webhookURL = "https://discord.com/api/webhooks/1483546848382685304/fHtmhEVcYiQt-xK01NIm7aIryXfaiMpguZI4A_jon3NlXlnrTogJRquJbisGKM-cF_8n"; 
-            const linkPainelAdmin = "https://devsmontes.github.io/Asw-recrut/adm.html"; 
-
-            const novaAppRef = database.ref('aplicacoes').push();
-            const appId = novaAppRef.key;
-
-            const dadosForm = {
-                id: appId,
-                nome: document.getElementById("nome_game").value,
-                discord: document.getElementById("discord_tag").value,
-                whatsapp: numeroWhatsapp, // ENVIANDO WHATSAPP PARA O BANCO
-                idade: idade,
-                horas: horas,
-                rotina: document.getElementById("rotina").value,
-                horarios: document.getElementById("horarios").value,
-                adm: document.getElementById("adm_exp").value,
-                ajuda: document.getElementById("compromisso").value,
-                status: "pending",
-                timestamp: Date.now()
-            };
-
-            novaAppRef.set(dadosForm).then(() => {
-                safeSetItem(STORAGE_KEY, "aguardando");
-                safeSetItem(APP_ID_KEY, appId);
-                
-                abrirModal();
-                mostrarTelaAguardando();
-                checarStatusAoVivo(appId);
-
-                const alertaDiscord = {
-                    embeds: [{
-                        title: "🔔 NOVO FORMULÁRIO RECEBIDO!",
-                        color: 2450411, 
-                        description: `**${dadosForm.nome}** enviou uma ficha e está aguardando análise.`,
-                        fields: [
-                            { name: "💬 Discord", value: `\`${dadosForm.discord}\``, inline: true },
-                            { name: "📱 WhatsApp", value: `\`${dadosForm.whatsapp}\``, inline: true },
-                            { name: "🎂 Idade / Horas", value: `${dadosForm.idade} anos / ${dadosForm.horas}h`, inline: true },
-                            { name: "🔗 Ação Necessária", value: `[Abrir Painel Administrativo](${linkPainelAdmin})` }
-                        ],
-                        footer: { text: "Asphalt Wolves | Sistema de Triagem Realtime" },
-                        timestamp: new Date()
-                    }]
-                };
-
-                fetch(webhookURL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(alertaDiscord)
-                }).catch(err => console.log("Erro ao notificar Discord: ", err));
-
-            }).catch((err) => {
-                alert("Erro ao enviar dados para o servidor.");
-            });
-        });
-</script>
-
-    <footer>
-        <p style="text-align: center; padding: 20px; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border-color);">&copy; Asphalt Wolves | Asw 2026 Montes Developers. Todos os direitos reservados, respeito e comando.</p>
+      </section>
+      <section class="section wrap">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">03 / SUA CHEGADA</p>
+            <h2>DA INSCRIÇÃO<br />À PRIMEIRA VOLTA.</h2>
+          </div>
+          <p>Um processo simples, com acompanhamento do início ao fim.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <span>01</span>
+            <h3>Conte sua história</h3>
+            <p>
+              Com o recrutamento aberto, preencha a ficha. Leva cerca de 2
+              minutos.
+            </p>
+          </li>
+          <li>
+            <span>02</span>
+            <h3>Acompanhe a análise</h3>
+            <p>
+              A diretoria avalia seu perfil. Volte neste navegador para
+              consultar a resposta.
+            </p>
+          </li>
+          <li>
+            <span>03</span>
+            <h3>Encontre a alcateia</h3>
+            <p>
+              Se aprovado, siga as orientações no resultado para entrar na
+              comunidade.
+            </p>
+          </li>
+        </ol>
+      </section>
+      <section class="section wrap faq-layout" id="duvidas">
+        <div>
+          <p class="eyebrow">04 / BOX DE APOIO</p>
+          <h2>ANTES DE<br />PEGAR A ESTRADA.</h2>
+          <a
+            class="text-link"
+            href="https://wa.me/5577988773155"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Fale com a equipe ↗</a
+          >
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Como sei se o recrutamento está aberto?</summary>
+            <p>
+              O indicador desta página acompanha o status definido pela
+              diretoria. Quando estiver fechado, novas fichas ficam bloqueadas.
+              Inscrições já enviadas continuam em análise.
+            </p>
+          </details>
+          <details>
+            <summary>Quanto tempo leva a análise?</summary>
+            <p>
+              A diretoria analisa as fichas conforme a disponibilidade. Após
+              enviar, acompanhe o resultado neste mesmo navegador. Se precisar,
+              fale com o suporte pelo WhatsApp.
+            </p>
+          </details>
+          <details>
+            <summary>Posso corrigir meus dados antes de enviar?</summary>
+            <p>
+              Sim. Revise todos os campos da ficha antes do envio. Depois de
+              enviada, peça ajuda à equipe se precisar corrigir alguma
+              informação.
+            </p>
+          </details>
+          <details>
+            <summary>Ainda não atendo aos requisitos. E agora?</summary>
+            <p>
+              É necessário ter pelo menos 15 anos e 10 horas de CPM2. Você pode
+              voltar quando atingir os requisitos, sem bloqueio permanente no
+              navegador.
+            </p>
+          </details>
+          <details>
+            <summary>Onde acompanho a equipe e as parcerias?</summary>
+            <p>
+              Entre no nosso Discord ou acompanhe o Instagram oficial. Para
+              parcerias, fale com a equipe pelo WhatsApp.
+            </p>
+          </details>
+        </div>
+      </section>
+      <section class="closing wrap">
+        <div>
+          <p class="eyebrow">A PRÓXIMA CURVA É NOSSA.</p>
+          <h2>NOS VEMOS NO ASFALTO.</h2>
+        </div>
+        <a
+          class="button"
+          href="https://discord.gg/K9j5v45R"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Conhecer o Discord ↗</a
+        >
+      </section>
+    </main>
+    <footer class="wrap footer">
+      <a class="brand" href="./"
+        ><img src="logo.png" width="36" height="36" alt="" /><span
+          >ASPHALT <b>WOLVES</b></span
+        ></a
+      >
+      <p>© 2026 Asphalt Wolves · Montes Developers</p>
+      <div>
+        <a
+          href="https://www.instagram.com/asphaltwolves.ofc/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Instagram ↗</a
+        ><a href="adm.html">Área da staff ↗</a>
+      </div>
     </footer>
-</body>
+    <dialog id="application-dialog" aria-labelledby="dialog-title">
+      <div class="dialog-top">
+        <span class="eyebrow">ASW / RECRUTAMENTO</span
+        ><button
+          class="icon-button"
+          id="close-dialog"
+          aria-label="Fechar formulário"
+        >
+          ✕
+        </button>
+      </div>
+      <h2 id="dialog-title">SEU LUGAR NA ALCATEIA.</h2>
+      <p id="dialog-description" class="muted">
+        Conte um pouco sobre você. A equipe cuida do próximo passo.
+      </p>
+      <div id="form-status" class="notice" role="status" hidden></div>
+      <form id="recruit-form">
+        <fieldset id="application-fields" disabled>
+          <legend class="sr-only">Dados da inscrição</legend>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="name">Nome / nickname no CPM2</label
+              ><input
+                id="name"
+                name="nome"
+                required
+                minlength="2"
+                maxlength="80"
+                autocomplete="nickname"
+                placeholder="Como podemos chamar você?"
+              />
+            </div>
+            <div class="field">
+              <label for="discord">Usuário do Discord</label
+              ><input
+                id="discord"
+                name="discord"
+                required
+                maxlength="80"
+                placeholder="Seu usuário no Discord"
+                autocapitalize="none"
+              />
+            </div>
+            <div class="field">
+              <label for="phone">WhatsApp com DDD</label
+              ><input
+                id="phone"
+                name="whatsapp"
+                type="tel"
+                required
+                maxlength="20"
+                autocomplete="tel"
+                placeholder="(77) 98888-7777"
+              />
+            </div>
+            <div class="field">
+              <label for="age">Idade</label
+              ><input
+                id="age"
+                name="idade"
+                type="number"
+                min="15"
+                max="100"
+                step="1"
+                required
+                placeholder="15 ou mais"
+              />
+            </div>
+            <div class="field">
+              <label for="hours">Horas no CPM2</label
+              ><input
+                id="hours"
+                name="horas"
+                type="number"
+                min="10"
+                max="100000"
+                step="1"
+                required
+                placeholder="10 ou mais"
+              />
+            </div>
+            <div class="field full">
+              <label for="routine">Como é sua rotina?</label
+              ><input
+                id="routine"
+                name="rotina"
+                required
+                maxlength="300"
+                placeholder="Trabalho, estudos e outros compromissos"
+              />
+            </div>
+            <div class="field full">
+              <label for="schedule">Quando você pode jogar?</label
+              ><input
+                id="schedule"
+                name="horarios"
+                required
+                maxlength="300"
+                placeholder="Ex.: durante a semana, depois das 20h"
+              />
+            </div>
+            <div class="field full">
+              <label for="history">Já participou de outras equipes?</label
+              ><textarea
+                id="history"
+                name="adm"
+                required
+                maxlength="600"
+                rows="2"
+                placeholder="Conte sua experiência ou diga se esta é a primeira."
+              ></textarea>
+            </div>
+            <div class="field full">
+              <label for="profile">Como quer participar?</label
+              ><select id="profile" name="ajuda" required>
+                <option value="">Selecione seu perfil</option>
+                <option value="Não">
+                  Piloto — participar dos encontros e eventos
+                </option>
+                <option value="Sim">
+                  Liderança — também ajudar a organizar a equipe
+                </option>
+              </select>
+            </div>
+            <label class="consent full"
+              ><input id="terms" type="checkbox" required /><span
+                >Confirmo que as informações são verdadeiras e autorizo a equipe
+                a usar estes dados para analisar minha inscrição e entrar em
+                contato.</span
+              ></label
+            >
+          </div>
+        </fieldset>
+        <p id="form-error" class="error-message" role="alert"></p>
+        <button
+          class="button submit-button"
+          id="submit-application"
+          type="submit"
+          disabled
+        >
+          Enviar minha inscrição ↗
+        </button>
+        <p class="privacy-note">
+          Seus dados são destinados à análise pela equipe. O resultado fica
+          disponível neste navegador.
+        </p>
+      </form>
+      <section
+        id="application-result"
+        class="result-panel"
+        hidden
+        aria-live="polite"
+      >
+        <span class="result-icon" id="result-icon" aria-hidden="true">◎</span>
+        <h3 id="result-title"></h3>
+        <p id="result-description"></p>
+        <p class="receipt" id="receipt"></p>
+        <div id="result-actions">
+          <a
+            class="button secondary"
+            id="result-link"
+            href="https://wa.me/5577988773155"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Falar com a equipe ↗</a
+          >
+        </div>
+      </section>
+    </dialog>
+    <noscript
+      ><p class="noscript">
+        Ative o JavaScript para consultar o recrutamento e enviar sua inscrição.
+      </p></noscript
+    >
+  </body>
 </html>
