@@ -3,202 +3,269 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#090e18" />
     <meta name="robots" content="noindex" />
-    <title>Staff — Asphalt Wolves</title>
-    <link rel="icon" href="logo.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>Estúdio da garagem — Celso do CPM2</title>
+    <link rel="icon" href="assets/favicon.svg" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="assets/site.css" />
     <script
-      defer
+      defer=""
       src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"
     ></script>
     <script
-      defer
+      defer=""
       src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"
     ></script>
-    <script
-      defer
-      src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"
-    ></script>
     <script type="module" src="assets/admin.js"></script>
+    <script type="module" src="assets/admin-analytics.js"></script>
   </head>
-  <body class="admin-page">
-    <header class="site-header wrap">
-      <a class="brand" href="./"
-        ><img src="logo.png" width="46" height="46" alt="" /><span
-          >ASPHALT <b>WOLVES</b><small>PAINEL DA STAFF</small></span
-        ></a
-      ><a class="text-link" href="./">Ver site ↗</a
-      ><button class="button secondary small" id="logout" hidden>
-        Sair da conta ↗
-      </button>
+  <body>
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="./"
+          >CELSO<span>DO CPM2<i></i></span></a
+        ><a class="text-link" href="garagem/">Ver garagem ↗</a
+        ><button class="button secondary" id="logout" hidden="">Sair</button>
+      </div>
     </header>
-    <main class="wrap admin-main">
-      <section id="login-section" class="login-panel">
-        <p class="eyebrow">ACESSO DA DIRETORIA</p>
-        <h1>O PRÓXIMO PILOTO<br />COMEÇA AQUI.</h1>
+    <main id="conteudo" class="wrap admin-main">
+      <section id="login-section" class="admin-login">
+        <p class="eyebrow">ACESSO DO PROPRIETÁRIO</p>
+        <h1>ESTÚDIO<br />DA GARAGEM.</h1>
         <p class="muted">
-          Entre para gerenciar o recrutamento e conhecer os candidatos.
+          O próximo carro, a próxima história. Entre com sua conta
+          administrativa para preparar uma exposição.
         </p>
         <form id="login-form">
           <div class="field">
-            <label for="email">E-mail de acesso</label
+            <label for="email">E-mail</label
             ><input
-              type="email"
               id="email"
+              type="email"
+              required=""
               autocomplete="username"
-              required
-              placeholder="seu@email.com"
             />
           </div>
           <div class="field">
             <label for="password">Senha</label
             ><input
-              type="password"
               id="password"
+              type="password"
+              required=""
               autocomplete="current-password"
-              required
-              placeholder="Sua senha de acesso"
             />
           </div>
-          <p id="login-error" class="error-message" role="alert"></p>
-          <button class="button" id="login-submit">Entrar no painel ↗</button>
+          <button class="button" id="login-submit">Entrar no estúdio ↗</button>
+          <p id="login-error" class="notice" role="alert"></p>
+          <button type="button" class="text-link" id="reset-password">
+            Esqueci minha senha
+          </button>
+          <p class="muted" id="reset-feedback" role="status"></p>
         </form>
-        <button class="text-link reset-link" id="reset-password">
-          Esqueci minha senha
-        </button>
-        <p id="reset-feedback" class="muted" role="status"></p>
       </section>
-      <section id="admin-section" hidden>
-        <div class="admin-heading">
+      <section id="admin-section" hidden="">
+        <div class="admin-top">
           <div>
-            <p class="eyebrow">CENTRAL DE RECRUTAMENTO</p>
-            <h1>A PRÓXIMA GERAÇÃO<br />DA ALCATEIA.</h1>
+            <p class="eyebrow">CELSO DO CPM2 / ESTÚDIO</p>
+            <h1>MINHA GARAGEM.</h1>
           </div>
-          <div class="connection">
-            <span class="status-dot"></span
-            ><span id="connection-label" role="status"
-              >Conectando ao Firebase…</span
+          <button class="button secondary" id="new-post">
+            Nova exposição +
+          </button>
+        </div>
+        <section class="analytics-panel" aria-labelledby="analytics-heading">
+          <div class="analytics-heading">
+            <div>
+              <p class="eyebrow">O MOVIMENTO DA GARAGEM</p>
+              <h2 id="analytics-heading">VISITAS &amp; INTERAÇÕES</h2>
+            </div>
+            <label
+              >Período
+              <select id="analytics-period">
+                <option value="7">Últimos 7 dias</option>
+                <option value="30">Últimos 30 dias</option>
+              </select></label
             >
           </div>
-        </div>
-        <section class="control-panel" aria-labelledby="control-title">
-          <div>
-            <p class="eyebrow">CONTROLE DE ADMISSÕES</p>
-            <h2 id="control-title">Consultando recrutamento…</h2>
-            <p id="control-description" class="muted">
-              Aguarde a confirmação do banco.
-            </p>
-            <p id="status-updated" class="privacy-note"></p>
+          <p class="muted">
+            Estimativas por sessão de navegação, sem IP ou identificação
+            pessoal. Abas, bloqueadores e robôs podem afetar os números. A
+            coleta começa com esta versão do site.
+          </p>
+          <div id="analytics-cards" class="analytics-cards"></div>
+          <div class="analytics-detail">
+            <div>
+              <p class="eyebrow">VISITAS POR DIA</p>
+              <div
+                id="analytics-chart"
+                class="analytics-chart"
+                aria-label="Visitas estimadas por dia"
+              ></div>
+            </div>
+            <div>
+              <p class="eyebrow">CARROS QUE DESPERTARAM INTERESSE</p>
+              <ol id="analytics-top"></ol>
+              <p id="analytics-rate" class="muted"></p>
+            </div>
           </div>
-          <div class="control-actions">
-            <label for="recruitment-select"
-              >Recebimento de novas inscrições</label
-            ><select id="recruitment-select" disabled>
-              <option value="">Verificando…</option>
-              <option value="aberto">Aberto — receber inscrições</option>
-              <option value="fechado">
-                Fechado — pausar inscrições
-              </option></select
-            ><button class="button small" id="save-status" disabled>
-              Salvar alteração ↗
-            </button>
-            <p
-              id="save-feedback"
-              class="muted"
-              role="status"
-              aria-live="polite"
-            ></p>
-          </div>
+          <p id="analytics-status" class="notice" role="status"></p>
         </section>
-        <div class="stats-grid">
-          <article>
-            <p class="eyebrow">EM ANÁLISE</p>
-            <strong id="count-pending">—</strong
-            ><span>À espera da diretoria</span>
-          </article>
-          <article>
-            <p class="eyebrow">APROVADOS</p>
-            <strong id="count-approved">—</strong
-            ><span>Novos caminhos na equipe</span>
-          </article>
-          <article>
-            <p class="eyebrow">RECUSADOS</p>
-            <strong id="count-rejected">—</strong
-            ><span>Processos concluídos</span>
-          </article>
+        <p class="notice" id="data-status" role="status"></p>
+        <div class="admin-layout">
+          <form id="post-form" class="editor-panel">
+            <fieldset id="editor-fields">
+              <legend id="editor-title">Prepare a próxima exposição</legend>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="title">Nome da exposição *</label
+                  ><input
+                    id="title"
+                    required=""
+                    minlength="2"
+                    maxlength="80"
+                    placeholder="O nome que este projeto merece"
+                  />
+                </div>
+                <div class="field">
+                  <label for="brand">Marca / modelo *</label
+                  ><input
+                    id="brand"
+                    required=""
+                    maxlength="60"
+                    placeholder="Ex.: BMW M4"
+                  />
+                </div>
+                <div class="field">
+                  <label for="category">Categoria *</label
+                  ><select id="category">
+                    <option>Esportivos</option>
+                    <option>Clássicos</option>
+                    <option>Projetos</option>
+                  </select>
+                </div>
+                <div class="field full">
+                  <label for="description">A história deste carro *</label
+                  ><textarea
+                    id="description"
+                    required=""
+                    minlength="10"
+                    maxlength="3000"
+                    placeholder="Como ele chegou à garagem? O que você mudou? O que o torna especial?"
+                  ></textarea>
+                </div>
+                <div class="field">
+                  <label for="year">Ano (opcional)</label
+                  ><input id="year" maxlength="20" placeholder="Ex.: 2020" />
+                </div>
+                <div class="field">
+                  <label for="power">Potência no jogo (opcional)</label
+                  ><input id="power" maxlength="40" placeholder="Ex.: 650 cv" />
+                </div>
+                <div class="field full">
+                  <label for="setup">Preparação (opcional)</label
+                  ><input
+                    id="setup"
+                    maxlength="100"
+                    placeholder="Ex.: Projeto de pista, acerto de suspensão"
+                  />
+                </div>
+                <div class="field full">
+                  <label for="photos">Fotos do carro *</label
+                  ><input
+                    id="photos"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple=""
+                  /><small
+                    >Até 4 fotos, PNG, JPG ou WebP; até 12 MB cada. A primeira é
+                    a capa. Imagens são otimizadas antes do envio, preservando a
+                    transparência.</small
+                  >
+                </div>
+              </div>
+              <div id="upload-list" class="upload-list"></div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="fit">Enquadramento da capa</label
+                  ><select id="fit">
+                    <option value="contain">
+                      Carro inteiro / sem recortar
+                    </option>
+                    <option value="cover">Foto preenchendo a capa</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="tone">Fundo da exposição</label
+                  ><select id="tone">
+                    <option value="dark">Grafite e azul</option>
+                    <option value="light">Estúdio claro</option>
+                    <option value="warm">Luz quente</option>
+                  </select>
+                </div>
+              </div>
+              <div class="admin-actions">
+                <button class="button" id="publish">
+                  Publicar exposição ↗</button
+                ><button
+                  type="button"
+                  class="button secondary"
+                  id="preview-detail"
+                >
+                  Ver apresentação
+                </button>
+              </div>
+            </fieldset>
+            <p class="notice" id="save-feedback" role="status"></p>
+          </form>
+          <aside class="preview-sticky">
+            <p class="eyebrow">PRÉVIA DA CAPA / ATUALIZA AO EDITAR</p>
+            <div id="post-preview"></div>
+            <p class="muted">
+              Fotos com fundo podem preencher a capa. Para recortes
+              transparentes, use “Carro inteiro” e escolha o fundo que valoriza
+              a pintura. Na exposição aberta, a foto sempre aparece inteira.
+            </p>
+          </aside>
         </div>
-        <section
-          class="applications-section"
-          aria-labelledby="applications-title"
-        >
-          <div class="applications-heading">
-            <h2 id="applications-title">FICHAS DOS PILOTOS</h2>
-            <p id="record-count" class="muted" role="status"></p>
+        <section class="admin-list">
+          <div class="section-label">
+            <span>EXPOSIÇÕES PUBLICADAS</span><span id="post-count">—</span>
           </div>
-          <div class="filter-bar">
-            <div class="tabs" role="group" aria-label="Filtrar inscrições">
-              <button data-filter="pending" aria-pressed="true">
-                Em análise</button
-              ><button data-filter="approved" aria-pressed="false">
-                Aprovados</button
-              ><button data-filter="rejected" aria-pressed="false">
-                Recusados</button
-              ><button data-filter="all" aria-pressed="false">Todos</button>
-            </div>
-            <div class="field search-field">
-              <label class="sr-only" for="search">Buscar nome ou Discord</label
-              ><input
-                id="search"
-                type="search"
-                placeholder="Buscar nome ou Discord…"
-              />
-            </div>
-            <div class="field date-field">
-              <label class="sr-only" for="decision-date">Data da decisão</label
-              ><input
-                id="decision-date"
-                type="date"
-                aria-label="Data da decisão"
-              />
-            </div>
-          </div>
-          <p id="data-error" class="error-message" role="alert"></p>
-          <div id="applications" class="application-grid">
-            <p class="empty-state">Carregando fichas…</p>
-          </div>
+          <div id="admin-posts"></div>
         </section>
       </section>
     </main>
-    <dialog id="decision-dialog" aria-labelledby="decision-title">
-      <div class="dialog-top">
-        <span class="eyebrow">ANÁLISE DE CANDIDATO</span
-        ><button
-          id="close-decision"
-          class="icon-button"
-          aria-label="Cancelar decisão"
-        >
-          ✕
-        </button>
-      </div>
-      <h2 id="decision-title">CONFIRMAR DECISÃO</h2>
-      <p id="decision-description" class="muted"></p>
-      <p id="decision-error" class="error-message" role="alert"></p>
-      <div class="dialog-actions">
-        <button class="button secondary" id="cancel-decision">
-          Voltar à ficha</button
-        ><button class="button" id="confirm-decision">Confirmar</button>
+    <footer class="wrap footer">
+      <p>
+        Celso do CPM2 · Criado por TH<small>O legado da ASW continua.</small>
+      </p>
+      <a href="./">Voltar ao site ↗</a>
+    </footer>
+    <dialog id="preview-dialog" aria-labelledby="car-title">
+      <button
+        class="dialog-close"
+        id="close-preview"
+        aria-label="Fechar prévia"
+      >
+        ✕
+      </button>
+      <div id="preview-detail-body"></div>
+    </dialog>
+    <dialog id="delete-dialog" aria-labelledby="delete-title">
+      <div class="detail-body">
+        <h2 id="delete-title">RETIRAR DA GARAGEM?</h2>
+        <p id="delete-description"></p>
+        <div class="admin-actions">
+          <button class="button danger" id="confirm-delete">
+            Excluir exposição</button
+          ><button class="button secondary" id="cancel-delete">Cancelar</button>
+        </div>
+        <p class="notice" id="delete-feedback" role="status"></p>
       </div>
     </dialog>
-    <footer class="wrap footer">
-      <p>© 2026 Asphalt Wolves · Montes Developers</p>
-      <a href="./">Voltar ao portal ↗</a>
-    </footer>
   </body>
 </html>

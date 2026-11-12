@@ -1,305 +1,364 @@
-import {
-  $,
-  ADMIN_UID,
-  initFirebase,
-  localDate,
-  formatTimestamp,
-  node,
-  normalizePhone,
-} from "./shared.js";
-
-let database,
-  auth,
-  connected = false,
-  saving = false,
-  dataReady = false,
-  configReady = false;
-let config = {},
+import { $, firebaseConfig, ADMIN_UID, node } from "./shared.js";
+import { validatePost, carCard, showCar, MAX_IMAGE_LENGTH } from "./garage.js";
+let auth,
+  images = [],
   records = [],
-  activeFilter = "pending",
-  cleanups = [],
-  decision = null,
-  deciding = false;
-const select = $("recruitment-select");
-function listen(reference, callback, onError) {
-  const handler = reference.on("value", callback, onError);
-  cleanups.push(() => reference.off("value", handler));
+  currentId = null,
+  etag = "null_etag",
+  createdAt = null,
+  busy = false,
+  dirty = false,
+  deleteTarget = null;
+const fields = [
+  "title",
+  "description",
+  "brand",
+  "category",
+  "year",
+  "power",
+  "setup",
+  "fit",
+  "tone",
+];
+function values() {
+  return Object.fromEntries(fields.map((k) => [k, $(k).value]));
 }
-function cleanup() {
-  cleanups.forEach((stop) => stop());
-  cleanups = [];
-  records = [];
-  dataReady = false;
-  configReady = false;
-  config = {};
-  connected = false;
-  decision = null;
-  $("decision-dialog").close();
-  $("decision-description").textContent = "";
-  $("applications").replaceChildren(
-    node("p", "empty-state", "Carregando fichas…"),
-  );
-  for (const key of ["pending", "approved", "rejected"])
-    $(`count-${key}`).textContent = "—";
+function preview() {
+  const p = {
+    ...values(),
+    images,
+    title: $("title").value || "O próximo projeto",
+    brand: $("brand").value || "Minha garagem",
+  };
+  if (!images.length) p.previewImage = "assets/images/garage-banner.png";
+  $("post-preview").replaceChildren(carCard(p, () => previewDetail()));
 }
-function renderControl() {
-  const valid = config.status === "aberto" || config.status === "fechado";
-  $("connection-label").textContent = connected
-    ? "Conectado ao Firebase"
-    : "Sem conexão · alterações bloqueadas";
-  $("connection-label").parentElement.dataset.connected = String(connected);
-  $("control-title").textContent = !configReady
-    ? "Consultando recrutamento…"
-    : config.status === "aberto"
-      ? "Recrutamento aberto"
-      : config.status === "fechado"
-        ? "Recrutamento fechado"
-        : "Recrutamento não configurado";
-  $("control-description").textContent =
-    config.status === "aberto"
-      ? "Novos candidatos podem enviar suas fichas pelo portal."
-      : "Novas inscrições estão bloqueadas. Fichas já enviadas continuam disponíveis para análise.";
-  select.disabled = !connected || saving || !configReady;
-  $("save-status").disabled =
-    !connected ||
-    saving ||
-    !configReady ||
-    !["aberto", "fechado"].includes(select.value) ||
-    (valid && select.value === config.status);
-  $("save-status").textContent = saving
-    ? "Salvando no banco…"
-    : "Salvar alteração ↗";
-  $("status-updated").textContent = config.updatedAt
-    ? `Última alteração: ${formatTimestamp(config.updatedAt)}`
-    : "Status sincronizado com o portal público.";
-}
-select.addEventListener("change", () => {
-  $("save-feedback").textContent = "";
-  renderControl();
-});
-$("save-status").addEventListener("click", async () => {
-  if (!connected || saving || !["aberto", "fechado"].includes(select.value))
-    return;
-  const desired = select.value;
-  saving = true;
-  $("save-feedback").textContent = "Aguardando confirmação do Firebase…";
-  renderControl();
-  // A disconnected SDK write can be queued. REST makes a failed connection explicit.
+function previewDetail() {
   try {
-    const token = await auth.currentUser.getIdToken();
-    const response = await fetch(
-      `${database.ref("config").toString()}.json?auth=${encodeURIComponent(token)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: desired,
-          updatedAt: { ".sv": "timestamp" },
-          updatedBy: auth.currentUser.uid,
-        }),
-        signal: AbortSignal.timeout(15000),
-      },
+    const p = validatePost({ ...values(), images });
+    showCar(p, $("preview-detail-body"));
+    $("preview-dialog").showModal();
+  } catch (e) {
+    $("save-feedback").textContent = e.message;
+  }
+}
+$("close-preview").onclick = () => $("preview-dialog").close();
+$("preview-detail").onclick = previewDetail;
+$("post-form").addEventListener("input", () => {
+  dirty = true;
+  preview();
+});
+function lock(value) {
+  busy = value;
+  $("editor-fields").disabled = value;
+  $("new-post").disabled = value;
+  $("logout").disabled = value;
+  document
+    .querySelectorAll("[data-record-action]")
+    .forEach((b) => (b.disabled = value));
+}
+function renderImages() {
+  const list = $("upload-list");
+  list.replaceChildren();
+  images.forEach((src, i) => {
+    const item = node("div", "upload-item"),
+      img = node("img");
+    img.src = src;
+    img.alt = `Foto ${i + 1}`;
+    const remove = node("button", "", "Remover");
+    remove.type = "button";
+    remove.dataset.remove = "";
+    remove.onclick = () => {
+      images.splice(i, 1);
+      dirty = true;
+      renderImages();
+      preview();
+    };
+    item.append(img, node("span", "", i === 0 ? "CAPA" : `0${i + 1}`));
+    if (i) {
+      const cover = node("button", "", "Usar como capa");
+      cover.type = "button";
+      cover.onclick = () => {
+        images.unshift(images.splice(i, 1)[0]);
+        dirty = true;
+        renderImages();
+        preview();
+      };
+      item.append(cover);
+    }
+    item.append(remove);
+    list.append(item);
+  });
+}
+export async function optimizeImage(file) {
+  if (
+    !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
+    file.size > 12 * 1024 * 1024
+  )
+    throw new Error("Use PNG, JPG ou WebP com até 12 MB por foto.");
+  const bitmap = await createImageBitmap(file);
+  try {
+    if (bitmap.width * bitmap.height > 60000000)
+      throw new Error(
+        "Esta foto tem resolução muito alta. Reduza para até 60 megapixels.",
+      );
+    let size = 1400;
+    for (let pass = 0; pass < 5; pass++) {
+      const scale = Math.min(1, size / Math.max(bitmap.width, bitmap.height)),
+        canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas
+        .getContext("2d")
+        .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const data = canvas.toDataURL("image/webp", 0.83 - pass * 0.08);
+      if (data.length <= MAX_IMAGE_LENGTH) return data;
+      size *= 0.8;
+    }
+    throw new Error(
+      "Não foi possível otimizar esta foto. Tente uma versão menor.",
     );
-    if (!response.ok) throw new Error("save");
-    config = { ...config, ...(await response.json()) };
-    select.value = config.status;
-    $("save-feedback").textContent =
-      desired === "aberto"
-        ? "Salvo no banco. O portal está recebendo inscrições."
-        : "Salvo no banco. Novas inscrições estão bloqueadas.";
-  } catch {
-    select.value = config.status || "";
-    $("save-feedback").textContent =
-      "Não foi possível confirmar a alteração. Consulte o status sincronizado antes de tentar novamente.";
   } finally {
-    saving = false;
-    renderControl();
+    bitmap.close();
+  }
+}
+$("photos").addEventListener("change", async () => {
+  const files = [...$("photos").files];
+  if (images.length + files.length > 4) {
+    $("save-feedback").textContent = "Cada exposição aceita até 4 fotos.";
+    $("photos").value = "";
+    return;
+  }
+  lock(true);
+  $("save-feedback").textContent = "Preparando suas fotos…";
+  try {
+    const additions = [];
+    for (const file of files) additions.push(await optimizeImage(file));
+    images.push(...additions);
+    dirty = true;
+    renderImages();
+    preview();
+    $("save-feedback").textContent =
+      "Fotos prontas. Confira a prévia antes de publicar.";
+  } catch (e) {
+    $("save-feedback").textContent = e.message;
+  } finally {
+    $("photos").value = "";
+    lock(false);
   }
 });
-
-function renderRecords() {
-  for (const status of ["pending", "approved", "rejected"])
-    $(`count-${status}`).textContent = records.filter(
-      (record) => record.status === status,
-    ).length;
-  const search = $("search").value.trim().toLocaleLowerCase("pt-BR");
-  const date = $("decision-date").value;
-  const shown = records.filter(
-    (record) =>
-      (activeFilter === "all" || record.status === activeFilter) &&
-      (!search ||
-        `${record.nome || ""} ${record.discord || ""}`
-          .toLocaleLowerCase("pt-BR")
-          .includes(search)) &&
-      (!date || record.dataDecisao === date),
+async function request(path, options = {}) {
+  const user = auth.currentUser;
+  if (user?.uid !== ADMIN_UID) throw new Error("Entre com a conta autorizada.");
+  const token = await user.getIdToken();
+  const response = await fetch(
+    `${firebaseConfig.databaseURL}/${path}.json?auth=${encodeURIComponent(token)}`,
+    { cache: "no-store", ...options, signal: AbortSignal.timeout(20000) },
   );
-  $("record-count").textContent =
-    `${shown.length} de ${records.length} inscrições`;
-  const container = $("applications");
-  container.replaceChildren();
-  if (!shown.length)
-    container.append(
+  if (response.status === 412)
+    throw new Error(
+      "Esta exposição mudou em outra sessão. Reabra a exposição antes de salvar.",
+    );
+  if (!response.ok)
+    throw new Error(
+      response.status === 401 || response.status === 403
+        ? "O banco não autorizou esta operação. Verifique se as regras da garagem foram publicadas e se sua conta está autorizada."
+        : "Não foi possível confirmar no servidor. Confira a conexão e tente novamente.",
+    );
+  return response;
+}
+function clearEditor() {
+  currentId = null;
+  etag = "null_etag";
+  createdAt = null;
+  images = [];
+  $("post-form").reset();
+  dirty = false;
+  $("editor-title").textContent = "Prepare a próxima exposição";
+  $("publish").textContent = "Publicar exposição ↗";
+  renderImages();
+  preview();
+}
+function canLeave() {
+  return (
+    !dirty || window.confirm("Descartar as alterações ainda não publicadas?")
+  );
+}
+$("new-post").onclick = () => {
+  if (canLeave()) {
+    clearEditor();
+    $("save-feedback").textContent = "";
+    $("title").focus();
+  }
+};
+async function refresh() {
+  try {
+    const response = await request("garagePosts");
+    records = Object.entries((await response.json()) || {})
+      .map(([id, p]) => ({ ...p, id }))
+      .sort((a, b) => b.createdAt - a.createdAt);
+    $("data-status").textContent = "";
+    renderRecords();
+  } catch (e) {
+    $("data-status").textContent = e.message;
+  }
+}
+function renderRecords() {
+  window.dispatchEvent(
+    new CustomEvent("garage-records", {
+      detail: Object.fromEntries(records.map((p) => [p.id, p.title])),
+    }),
+  );
+  $("post-count").textContent = String(records.length);
+  $("admin-posts").replaceChildren();
+  if (!records.length)
+    $("admin-posts").append(
+      node("p", "muted", "Sua primeira exposição começa no editor acima."),
+    );
+  records.forEach((p) => {
+    const row = node("article", "admin-record"),
+      info = node("div"),
+      actions = node("div", "admin-actions");
+    info.append(
+      node("h3", "", p.title),
       node(
         "p",
-        "empty-state",
-        dataReady
-          ? "Nenhuma ficha encontrada para estes filtros."
-          : "Carregando fichas…",
+        "",
+        `${p.category} · ${new Date(p.createdAt).toLocaleDateString("pt-BR")}`,
       ),
     );
-  shown.forEach((record) => container.append(card(record)));
+    const edit = node("button", "button secondary", "Editar"),
+      remove = node("button", "button secondary danger", "Excluir");
+    edit.dataset.recordAction = "";
+    remove.dataset.recordAction = "";
+    edit.disabled = remove.disabled = busy;
+    edit.onclick = () => editPost(p.id);
+    remove.onclick = () => {
+      deleteTarget = p;
+      $("delete-description").textContent =
+        `A exposição “${p.title}” será removida do site, junto com suas fotos.`;
+      $("delete-feedback").textContent = "";
+      $("delete-dialog").showModal();
+    };
+    actions.append(edit, remove);
+    row.append(info, actions);
+    $("admin-posts").append(row);
+  });
 }
-function card(record) {
-  const article = node("article", "application-card");
-  const heading = node("div", "candidate-heading");
-  const badge = node(
-    "span",
-    "status-badge",
-    { pending: "Em análise", approved: "Aprovado", rejected: "Recusado" }[
-      record.status
-    ] || "Sem status",
-  );
-  badge.dataset.status = record.status;
-  heading.append(node("h3", "", record.nome || "Candidato"), badge);
-  article.append(heading);
-  article.append(node("p", "candidate-id", `Protocolo: ${record.id}`));
-  const info = node("dl", "candidate-info");
-  for (const [label, value, full] of [
-    ["Discord", record.discord],
-    ["WhatsApp", record.whatsapp],
-    ["Idade", `${record.idade ?? "—"} anos`],
-    ["CPM2", `${record.horas ?? "—"} horas`],
-    ["Rotina", record.rotina, true],
-    ["Disponibilidade", record.horarios, true],
-    ["Equipes anteriores", record.adm, true],
-    ["Quer ajudar na organização?", record.ajuda, true],
-  ]) {
-    const group = node("div", full ? "full" : "");
-    group.append(
-      node("dt", "", label),
-      node("dd", "", value || "Não informado"),
-    );
-    info.append(group);
-  }
-  article.append(info);
-  const actions = node("div", "candidate-actions");
-  if (record.status === "pending") {
-    for (const [status, label, className] of [
-      ["approved", "Aprovar ↗", "button"],
-      ["rejected", "Recusar", "button secondary reject"],
-    ]) {
-      const button = node("button", className, label);
-      button.disabled = !connected;
-      button.addEventListener("click", () => openDecision(record, status));
-      actions.append(button);
-    }
-  }
-  const phone = normalizePhone(record.whatsapp);
-  if (phone) {
-    const link = node("a", "button secondary", "WhatsApp ↗");
-    link.href = `https://wa.me/55${phone}`;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    actions.append(link);
-  }
-  article.append(actions);
-  article.append(
-    node(
-      "p",
-      "decision-meta",
-      record.decidedAt
-        ? `Decisão: ${formatTimestamp(record.decidedAt)}`
-        : typeof record.dataDecisao === "string"
-          ? `Decisão: ${record.dataDecisao.split("-").reverse().join("/")}`
-          : `Enviada em: ${formatTimestamp(record.timestamp)}`,
-    ),
-  );
-  return article;
-}
-document.querySelectorAll("[data-filter]").forEach((button) =>
-  button.addEventListener("click", () => {
-    activeFilter = button.dataset.filter;
-    document
-      .querySelectorAll("[data-filter]")
-      .forEach((item) =>
-        item.setAttribute("aria-pressed", String(item === button)),
-      );
-    renderRecords();
-  }),
-);
-$("search").addEventListener("input", renderRecords);
-$("decision-date").addEventListener("change", renderRecords);
-function openDecision(record, status) {
-  if (!connected || deciding) return;
-  decision = { id: record.id, status };
-  $("decision-error").textContent = "";
-  $("decision-title").textContent =
-    status === "approved" ? "APROVAR CANDIDATO?" : "RECUSAR CANDIDATO?";
-  $("decision-description").textContent =
-    `Confirme a decisão para ${record.nome || "este candidato"}. O resultado ficará disponível imediatamente para o candidato.`;
-  $("confirm-decision").textContent =
-    status === "approved" ? "Confirmar aprovação" : "Confirmar recusa";
-  $("decision-dialog").showModal();
-}
-function closeDecision() {
-  if (!deciding) $("decision-dialog").close();
-}
-$("close-decision").addEventListener("click", closeDecision);
-$("cancel-decision").addEventListener("click", closeDecision);
-$("decision-dialog").addEventListener("cancel", (event) => {
-  if (deciding) event.preventDefault();
-});
-$("confirm-decision").addEventListener("click", async () => {
-  if (!decision || deciding || !connected) return;
-  deciding = true;
-  for (const id of ["confirm-decision", "cancel-decision", "close-decision"])
-    $(id).disabled = true;
+async function editPost(id) {
+  if (!canLeave()) return;
+  lock(true);
   try {
-    // ETag + If-Match prevents two staff tabs from silently overwriting a decision.
-    const token = await auth.currentUser.getIdToken();
-    const url = `${database.ref(`aplicacoes/${decision.id}`).toString()}.json?auth=${encodeURIComponent(token)}`;
-    const existing = await fetch(url, {
+    const response = await request(`garagePosts/${id}`, {
       headers: { "X-Firebase-ETag": "true" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
     });
-    if (!existing.ok) throw new Error("read");
-    const record = await existing.json();
-    if (!record || record.status !== "pending")
-      throw new Error("already-decided");
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "If-Match": existing.headers.get("ETag"),
-      },
-      body: JSON.stringify({
-        ...record,
-        status: decision.status,
-        dataDecisao: localDate(),
-        decidedAt: { ".sv": "timestamp" },
-        decidedBy: auth.currentUser.uid,
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (response.status === 412) throw new Error("already-decided");
-    if (!response.ok) throw new Error("save");
-    $("decision-dialog").close();
-  } catch (error) {
-    $("decision-error").textContent =
-      error.message === "already-decided"
-        ? "Esta ficha já foi respondida em outra sessão. Feche esta janela e confira o resultado atualizado."
-        : "Não foi possível confirmar a decisão. Confira a conexão e o resultado atualizado antes de tentar novamente.";
+    const p = await response.json();
+    if (!p) throw new Error("Esta exposição já foi removida.");
+    currentId = id;
+    etag = response.headers.get("ETag");
+    if (!etag)
+      throw new Error(
+        "Não foi possível obter a versão da exposição. Recarregue e tente novamente.",
+      );
+    createdAt = p.createdAt;
+    fields.forEach((k) => ($(k).value = p[k] || ""));
+    images = [...p.images];
+    dirty = false;
+    renderImages();
+    preview();
+    $("editor-title").textContent = "Editar exposição";
+    $("publish").textContent = "Salvar alterações ↗";
+    $("save-feedback").textContent = "";
+    $("post-form").scrollIntoView({ behavior: "smooth" });
+  } catch (e) {
+    $("data-status").textContent = e.message;
   } finally {
-    deciding = false;
-    for (const id of ["confirm-decision", "cancel-decision", "close-decision"])
-      $(id).disabled = false;
+    lock(false);
   }
+}
+$("post-form").onsubmit = async (e) => {
+  e.preventDefault();
+  if (busy) return;
+  let p;
+  try {
+    p = validatePost({ ...values(), images });
+  } catch (error) {
+    $("save-feedback").textContent = error.message;
+    return;
+  }
+  lock(true);
+  $("save-feedback").textContent = "Publicando na garagem…";
+  currentId ||= crypto.randomUUID();
+  try {
+    const response = await request(`garagePosts/${currentId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "If-Match": etag },
+      body: JSON.stringify({
+        ...p,
+        createdAt: createdAt || { ".sv": "timestamp" },
+        updatedAt: { ".sv": "timestamp" },
+        updatedBy: ADMIN_UID,
+      }),
+    });
+    await response.json();
+    clearEditor();
+    $("save-feedback").textContent =
+      "Exposição publicada! Já está disponível na garagem do site.";
+    await refresh();
+  } catch (error) {
+    $("save-feedback").textContent =
+      error.message + " Suas alterações continuam no editor.";
+  } finally {
+    lock(false);
+  }
+};
+$("cancel-delete").onclick = () => $("delete-dialog").close();
+$("delete-dialog").addEventListener("cancel", (e) => {
+  if (busy) e.preventDefault();
 });
-$("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  $("login-error").textContent = "";
+$("confirm-delete").onclick = async () => {
+  if (!deleteTarget || busy) return;
+  lock(true);
+  $("confirm-delete").disabled = $("cancel-delete").disabled = true;
+  try {
+    const response = await request(`garagePosts/${deleteTarget.id}`, {
+      headers: { "X-Firebase-ETag": "true" },
+    });
+    const version = response.headers.get("ETag");
+    if (!version)
+      throw new Error("Não foi possível verificar a versão. Tente novamente.");
+    const latest = await response.json();
+    if (
+      JSON.stringify(latest) !==
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(deleteTarget).filter(([k]) => k !== "id"),
+        ),
+      )
+    ) {
+      if (latest?.updatedAt !== deleteTarget.updatedAt)
+        throw new Error(
+          "A exposição mudou. Feche esta janela e recarregue a lista antes de excluir.",
+        );
+    }
+    await request(`garagePosts/${deleteTarget.id}`, {
+      method: "DELETE",
+      headers: { "If-Match": version },
+    });
+    if (currentId === deleteTarget.id) clearEditor();
+    $("delete-dialog").close();
+    await refresh();
+  } catch (e) {
+    $("delete-feedback").textContent = e.message;
+  } finally {
+    lock(false);
+    $("confirm-delete").disabled = $("cancel-delete").disabled = false;
+  }
+};
+$("login-form").onsubmit = async (e) => {
+  e.preventDefault();
   $("login-submit").disabled = true;
+  $("login-error").textContent = "";
   try {
     await auth.signInWithEmailAndPassword(
       $("email").value.trim(),
@@ -312,90 +371,64 @@ $("login-form").addEventListener("submit", async (event) => {
   } finally {
     $("login-submit").disabled = false;
   }
-});
-$("reset-password").addEventListener("click", async () => {
+};
+$("reset-password").onclick = async () => {
   if (!$("email").reportValidity()) return;
   $("reset-password").disabled = true;
   try {
     auth.languageCode = "pt-BR";
     await auth.sendPasswordResetEmail($("email").value.trim());
     $("reset-feedback").textContent =
-      "Se este e-mail estiver cadastrado, você receberá um link de redefinição. Confira também o spam.";
+      "Se este e-mail estiver cadastrado, você receberá um link de redefinição.";
   } catch {
     $("reset-feedback").textContent =
-      "Não foi possível solicitar o link agora. Tente novamente mais tarde.";
+      "Não foi possível solicitar o link. Tente novamente mais tarde.";
   } finally {
     $("reset-password").disabled = false;
   }
+};
+$("logout").onclick = async () => {
+  if (!canLeave()) return;
+  try {
+    await auth.signOut();
+    clearEditor();
+  } catch {
+    $("data-status").textContent = "Não foi possível sair. Tente novamente.";
+  }
+};
+window.addEventListener("beforeunload", (e) => {
+  if (dirty) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
 });
-$("logout").addEventListener("click", () =>
-  auth.signOut().catch(() => {
-    $("data-error").textContent = "Não foi possível sair. Tente novamente.";
-  }),
-);
-
 try {
-  database = initFirebase();
+  if (!window.firebase) throw new Error();
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
   auth = firebase.auth();
   auth.onAuthStateChanged(async (user) => {
-    cleanup();
     const allowed = user?.uid === ADMIN_UID;
     $("login-section").hidden = allowed;
     $("admin-section").hidden = !allowed;
-    $("logout").hidden = !user;
+    $("logout").hidden = !allowed;
     if (!allowed) {
+      records = [];
+      images = [];
+      dirty = false;
+      $("admin-posts").replaceChildren();
+      clearEditor();
       if (user) {
         $("login-error").textContent =
-          "Esta conta não possui acesso à administração.";
+          "Esta conta não possui acesso à garagem.";
         await auth.signOut();
       }
       return;
     }
-    $("data-error").textContent = "";
-    $("save-feedback").textContent = "";
-    listen(database.ref(".info/connected"), (snapshot) => {
-      connected = snapshot.val() === true;
-      renderControl();
-      if (dataReady) renderRecords();
-    });
-    listen(
-      database.ref("config"),
-      (snapshot) => {
-        config = snapshot.val() || {};
-        configReady = true;
-        if (!saving) select.value = config.status || "";
-        renderControl();
-      },
-      () => {
-        configReady = false;
-        $("save-feedback").textContent =
-          "Sem permissão para consultar a configuração.";
-        renderControl();
-      },
-    );
-    listen(
-      database.ref("aplicacoes"),
-      (snapshot) => {
-        records = Object.entries(snapshot.val() || {})
-          .map(([id, value]) => ({ ...value, id }))
-          .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-        dataReady = true;
-        $("data-error").textContent = "";
-        renderRecords();
-      },
-      () => {
-        records = [];
-        dataReady = false;
-        renderRecords();
-        $("data-error").textContent =
-          "Não foi possível carregar as fichas. Verifique a conexão e as permissões do banco.";
-      },
-    );
-    renderControl();
+    await refresh();
   });
 } catch {
   $("login-error").textContent =
-    "Não foi possível carregar o Firebase. Recarregue a página.";
-  $("login-submit").disabled = true;
-  $("reset-password").disabled = true;
+    "Não foi possível carregar o acesso. Confira a conexão e recarregue a página.";
+  $("login-submit").disabled = $("reset-password").disabled = true;
 }
+preview();
