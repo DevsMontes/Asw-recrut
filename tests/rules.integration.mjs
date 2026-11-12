@@ -8,21 +8,17 @@ import {
 import { ref, set, get, update, serverTimestamp } from "firebase/database";
 import { ADMIN_UID } from "../assets/shared.js";
 let env, publicDB, adminDB, otherDB;
-const id = "-Ox0123456789_ABCdef";
-const application = () => ({
-  id,
-  nome: "Piloto Teste",
-  discord: "piloto",
-  whatsapp: "77988887777",
-  idade: 18,
-  horas: 15,
-  rotina: "Trabalho",
-  horarios: "À noite",
-  adm: "Primeira equipe\nQuero participar",
-  ajuda: "Não",
-  status: "pending",
-  timestamp: serverTimestamp(),
-  consent: true,
+const post = () => ({
+  title: "Projeto azul",
+  brand: "BMW",
+  description: "A história deste carro de teste.",
+  category: "Esportivos",
+  fit: "contain",
+  tone: "dark",
+  images: ["data:image/webp;base64,UklGRg=="],
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp(),
+  updatedBy: ADMIN_UID,
 });
 before(async () => {
   env = await initializeTestEnvironment({
@@ -38,148 +34,82 @@ before(async () => {
   });
   publicDB = env.unauthenticatedContext().database();
   adminDB = env.authenticatedContext(ADMIN_UID).database();
-  otherDB = env.authenticatedContext("outro-usuario").database();
+  otherDB = env.authenticatedContext("intruder").database();
 });
 after(async () => env?.cleanup());
-beforeEach(async () => {
-  await env.clearDatabase();
-  await env.withSecurityRulesDisabled((context) =>
-    set(ref(context.database(), "config"), { status: "aberto" }),
-  );
-});
-test("public can read recruitment status; only existing admin can change it", async () => {
-  await assertSucceeds(get(ref(publicDB, "config/status")));
-  await assertFails(set(ref(publicDB, "config/status"), "fechado"));
+beforeEach(async () => env.clearDatabase());
+test("only owner publishes, edits and removes; visitors can see the exhibition", async () => {
+  await assertFails(set(ref(publicDB, "garagePosts/one"), post()));
+  await assertFails(set(ref(otherDB, "garagePosts/one"), post()));
+  await assertSucceeds(set(ref(adminDB, "garagePosts/one"), post()));
+  await assertSucceeds(get(ref(publicDB, "garagePosts")));
   await assertFails(
-    update(ref(otherDB, "config"), {
-      status: "fechado",
-      updatedAt: serverTimestamp(),
-      updatedBy: "outro-usuario",
-    }),
+    update(ref(publicDB, "garagePosts/one"), { title: "Hacked" }),
   );
   await assertSucceeds(
-    update(ref(adminDB, "config"), {
-      status: "fechado",
+    update(ref(adminDB, "garagePosts/one"), {
+      title: "Atualizado",
       updatedAt: serverTimestamp(),
-      updatedBy: ADMIN_UID,
     }),
   );
+  await assertFails(set(ref(otherDB, "garagePosts/one"), null));
+  await assertSucceeds(set(ref(adminDB, "garagePosts/one"), null));
+});
+test("server rejects malformed photos, extra fields, forged authors and changed creation time", async () => {
+  for (const change of [
+    { title: "x" },
+    { description: "curta" },
+    { category: "bad" },
+    { fit: "bad" },
+    { tone: "bad" },
+    { images: ["javascript:alert(1)"] },
+    { images: { 1: "data:image/webp;base64,UklGRg==" } },
+    { images: Array(5).fill("data:image/webp;base64,UklGRg==") },
+    { images: ["data:image/webp;base64," + "A".repeat(420000)] },
+    { createdAt: 1 },
+    { updatedAt: 1 },
+    { updatedBy: "intruder" },
+    { unexpected: "bad" },
+  ])
+    await assertFails(
+      set(ref(adminDB, "garagePosts/one"), { ...post(), ...change }),
+    );
+  await set(ref(adminDB, "garagePosts/one"), post());
   await assertFails(
-    update(ref(adminDB, "config"), {
-      status: "invalid",
+    update(ref(adminDB, "garagePosts/one"), {
+      createdAt: 1,
       updatedAt: serverTimestamp(),
-      updatedBy: ADMIN_UID,
     }),
   );
 });
-test("valid application can be created while open; only its result is public", async () => {
-  await assertSucceeds(set(ref(publicDB, `aplicacoes/${id}`), application()));
-  await assertSucceeds(get(ref(publicDB, `aplicacoes/${id}/status`)));
-  await assertFails(get(ref(publicDB, `aplicacoes/${id}`)));
+test("recruitment stays closed even if old config says open; legacy personal data stays private", async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await set(ref(c.database(), "config"), { status: "aberto" });
+    await set(ref(c.database(), "aplicacoes/old"), {
+      nome: "Privado",
+      status: "pending",
+    });
+  });
+  await assertFails(
+    set(ref(publicDB, "aplicacoes/new"), { nome: "Teste", status: "pending" }),
+  );
   await assertFails(get(ref(publicDB, "aplicacoes")));
+  await assertFails(get(ref(publicDB, "aplicacoes/old/status")));
   await assertFails(get(ref(otherDB, "aplicacoes")));
   await assertSucceeds(get(ref(adminDB, "aplicacoes")));
-});
-test("closing recruitment blocks writes from stale forms and direct API calls", async () => {
-  await set(ref(adminDB, "config"), {
-    status: "fechado",
-    updatedAt: serverTimestamp(),
-    updatedBy: ADMIN_UID,
-  });
-  await assertFails(set(ref(publicDB, `aplicacoes/${id}`), application()));
-  await set(ref(adminDB, "config"), {
-    status: "aberto",
-    updatedAt: serverTimestamp(),
-    updatedBy: ADMIN_UID,
-  });
-  await assertSucceeds(set(ref(publicDB, `aplicacoes/${id}`), application()));
-});
-test("missing configuration is closed by default", async () => {
-  await env.withSecurityRulesDisabled((context) =>
-    set(ref(context.database(), "config"), null),
-  );
-  await assertFails(set(ref(publicDB, `aplicacoes/${id}`), application()));
-});
-test("visitors cannot forge approvals, rewrite or delete a submitted application", async () => {
-  await set(ref(publicDB, `aplicacoes/${id}`), application());
+  await assertFails(set(ref(adminDB, "aplicacoes/old"), null));
   await assertFails(
-    update(ref(publicDB, `aplicacoes/${id}`), { status: "approved" }),
-  );
-  await assertFails(set(ref(publicDB, `aplicacoes/${id}`), application()));
-  await assertFails(set(ref(publicDB, `aplicacoes/${id}`), null));
-  await assertFails(
-    update(ref(otherDB, `aplicacoes/${id}`), {
-      status: "approved",
-      dataDecisao: "2026-10-24",
-      decidedAt: serverTimestamp(),
-      decidedBy: "outro-usuario",
-    }),
-  );
-});
-test("server rejects malformed and incomplete applications", async () => {
-  for (const change of [
-    { idade: 14 },
-    { idade: 15.5 },
-    { horas: 9 },
-    { horas: 10.5 },
-    { nome: "x" },
-    { whatsapp: "123" },
-    { status: "approved" },
-    { consent: false },
-    { id: "different-id" },
-    { timestamp: 1 },
-    { unexpected: "field" },
-    { decidedBy: ADMIN_UID },
-  ]) {
-    await assertFails(
-      set(ref(publicDB, `aplicacoes/${id}`), { ...application(), ...change }),
-    );
-  }
-  const incomplete = application();
-  delete incomplete.rotina;
-  await assertFails(set(ref(publicDB, `aplicacoes/${id}`), incomplete));
-});
-test("admin can decide existing legacy records while closed without changing personal data", async () => {
-  const old = application();
-  delete old.consent;
-  old.timestamp = 123456;
-  await env.withSecurityRulesDisabled(async (context) => {
-    await set(ref(context.database(), `aplicacoes/${id}`), old);
-    await set(ref(context.database(), "config"), { status: "fechado" });
-  });
-  await assertFails(
-    update(ref(adminDB, `aplicacoes/${id}`), {
-      nome: "Alterado",
-      status: "approved",
-      dataDecisao: "2026-10-24",
-      decidedAt: serverTimestamp(),
-      decidedBy: ADMIN_UID,
-    }),
-  );
-  await assertFails(
-    update(ref(adminDB, `aplicacoes/${id}`), {
-      nome: null,
-      status: "approved",
-      dataDecisao: "2026-10-24",
-      decidedAt: serverTimestamp(),
-      decidedBy: ADMIN_UID,
+    set(ref(adminDB, "config"), {
+      status: "aberto",
+      updatedAt: serverTimestamp(),
+      updatedBy: ADMIN_UID,
     }),
   );
   await assertSucceeds(
-    update(ref(adminDB, `aplicacoes/${id}`), {
-      status: "approved",
-      dataDecisao: "2026-10-24",
-      decidedAt: serverTimestamp(),
-      decidedBy: ADMIN_UID,
-    }),
-  );
-  await assertSucceeds(get(ref(publicDB, `aplicacoes/${id}/status`)));
-  await assertFails(
-    update(ref(adminDB, `aplicacoes/${id}`), {
-      status: "rejected",
-      dataDecisao: "2026-10-24",
-      decidedAt: serverTimestamp(),
-      decidedBy: ADMIN_UID,
+    set(ref(adminDB, "config"), {
+      status: "fechado",
+      updatedAt: serverTimestamp(),
+      updatedBy: ADMIN_UID,
     }),
   );
 });

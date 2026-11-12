@@ -1,4 +1,4 @@
-name: Validate and deploy Asphalt Wolves
+name: Validate and deploy Celso do CPM2
 on:
   push:
     branches: [main]

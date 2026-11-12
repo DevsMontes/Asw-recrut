@@ -1,10 +1,10 @@
-# Asphalt Wolves — portal de recrutamento
+# Celso do CPM2 — Uma nova era
 
-Portal estático no GitHub Pages, com Firebase Authentication para a staff e Firebase Realtime Database para inscrições e status ao vivo. Não há etapa de compilação para desenvolver as páginas.
+Site pessoal de TH no GitHub Pages. Preserva a memória da Asphalt Wolves, apresenta o personagem independente inspirado em Celso Oliveira (ETNRLZ) e publica exposições da garagem no Car Parking Multiplayer 2.
 
-## Desenvolvimento e verificação
+## Desenvolvimento
 
-Use Node.js 24.15+ e Java 21 para o emulador.
+Node 24+, Java 21 para as regras do Firebase:
 
 ```sh
 npm ci
@@ -14,44 +14,34 @@ npm run test:rules
 npm run build
 ```
 
-O endereço local é http://127.0.0.1:4173. Os testes de regras usam exclusivamente o projeto demonstrativo `demo-asw`, sem alterar dados de produção. Os testes DOM cobrem fechamento durante preenchimento, reabertura, queda de conexão, envio repetido, resposta perdida, acompanhamento legado, conteúdo malicioso e concorrência entre decisões.
+O site é estático. O Firebase Authentication existente controla o acesso em `adm.html`; `garagePosts` no Realtime Database armazena as exposições. Só o UID administrativo já existente pode publicar, editar e excluir. Visitantes só leem exposições. Nenhuma conta ou senha nova foi criada.
 
-## Fonte de verdade do recrutamento
+## Publicar uma exposição
 
-`config/status` aceita apenas `aberto` ou `fechado`. O site começa bloqueado até receber a confirmação do banco e bloqueia novamente sem conexão, em caso de erro ou configuração ausente. Fechar vagas preserva o formulário e os campos já preenchidos. Reabrir habilita o mesmo formulário sem recarregar a página.
+Entre em `adm.html` com a conta administrativa. Preencha nome, marca e história, selecione categoria e envie de uma a quatro fotos. Escolha a capa, o enquadramento e o fundo, confira “Ver apresentação” e publique. Fotos são convertidas localmente para WebP com transparência preservada, até 1400 pixels e 420 mil caracteres por imagem. A apresentação aberta sempre mostra a imagem inteira. Não são inventados carros ou publicações iniciais.
 
-Antes de enviar, o cliente consulta novamente o status. As regras do banco também exigem `aberto` no instante da gravação: modificar o HTML ou enviar requisições diretas não contorna o fechamento. O envio utiliza REST com prazo de 15 segundos, sem fila de gravação offline, e reaproveita o protocolo em uma nova tentativa após erro. O banco rejeita sobrescritas e aprovações forjadas.
+As gravações usam REST com timeout e ETag/If-Match para evitar sobrescrita por outra sessão. A interface só confirma depois da resposta do banco. Falhas preservam os campos. Exclusão exige confirmação no painel. A lista pública tem busca, categorias e carregamento progressivo de cartões; o conjunto de registros ainda é baixado em uma consulta, indicado para uma garagem pessoal pequena. Para centenas de exposições, migrar fotos para object storage e paginar no servidor.
 
-O painel salva `config/status`, `updatedAt` (horário do servidor) e `updatedBy`. Só confirma sucesso após a resposta do servidor. Fechar vagas não altera fichas existentes nem impede sua análise. Os dados e identificadores antigos são preservados; não há migração destrutiva.
+## Implantação
 
-## Permissões do banco
-
-As regras em `database.rules.json` correspondem ao UID da conta administrativa existente, confirmado no Firebase Authentication: `HZ2txmi9fPVzDKvt5f5OomAi1B42`. Esse identificador e a configuração Web Firebase são públicos por natureza; não são senhas ou credenciais de serviço. A autorização depende das regras no servidor.
-
-- Visitantes leem a configuração e somente `aplicacoes/{protocolo}/status`, sem nomes, telefones ou conteúdo da ficha.
-- Visitantes criam uma ficha completa com status `pending` apenas enquanto o recrutamento estiver aberto. A idade mínima, horas, campos, consentimento e horário do servidor são validados nas regras.
-- Somente a conta administrativa existente pode listar fichas, mudar o recrutamento e decidir uma ficha pendente.
-- Decisões preservam os dados originais, gravam autor e horário do servidor, e usam ETag para impedir sobrescrita por outra aba.
-- O painel renderiza dados de candidatos como texto, sem `innerHTML` ou eventos montados a partir de conteúdo do banco.
-
-Para mudar a conta administrativa no futuro, atualizar o UID nas regras e no cliente, testar e publicar ambos. Criar uma conta no Authentication não concede acesso à staff.
-
-O acompanhamento usa o protocolo imprevisível salvo neste navegador (`asw_id`). As chaves antigas `idFichaAsphalt` e `asw_status` são compatíveis. Limpar o armazenamento, usar outro navegador ou modo privado pode perder o acompanhamento local; o candidato pode informar seu protocolo à equipe. O protocolo permite consultar apenas o resultado, nunca a ficha completa.
-
-## Publicação
-
-O workflow `.github/workflows/static.yml` executa testes de interface, testes no emulador e cria `dist/` com apenas as páginas e os assets públicos. O GitHub Pages publica essa pasta. Dependências, testes e arquivos operacionais não são enviados no artefato público.
-
-As regras do Realtime Database são uma publicação separada: editar a aba **Realtime Database → Regras** no projeto `recrutamento-asw`, ou usar uma sessão Firebase CLI autorizada:
+O workflow de Pages testa a interface, testa regras no emulador `demo-asw` e publica `dist/`. As regras do banco precisam ser publicadas separadamente com uma conta Firebase autorizada:
 
 ```sh
 npx firebase deploy --only database --project recrutamento-asw
 ```
 
-Depois de alterar o formato de dados, publique o cliente compatível antes de restringir as regras. Não exporte fichas pessoais para commits, logs ou testes. Nunca coloque uma chave de conta de serviço no repositório.
+Publicar as regras junto da nova interface. Elas encerram definitivamente novas inscrições e preservam as fichas antigas como arquivo privado e imutável, acessível apenas ao administrador. Não há migração, exportação nem exclusão de fichas pessoais. `garagePosts` é público para leitura e exclusivo da conta administrativa para escrita. A configuração Firebase e o UID são identificadores públicos, não segredos.
 
-## Notificações
+## Personagem e imagens
 
-O webhook Discord que estava embutido no JavaScript público foi removido: ele expunha a credencial e enviava dados pessoais dos candidatos diretamente do navegador. O painel mantém o acompanhamento ao vivo. Para restaurar alertas Discord, rotacione o webhook antigo e configure um serviço de backend com segredo protegido; não recoloque o webhook no frontend.
+As duas artes fornecidas por TH são usadas em `assets/images`. A abertura e as quatro vistas mostram o personagem original. O modo 3D é uma escultura procedural estilizada feita com Three.js, com geometria real, controles de órbita, zoom, teclado e giro automático opcional; não é uma reconstrução fotorrealista do desenho. O 3D é carregado sob demanda e pausa a renderização fora da tela. Em dispositivos sem WebGL, as artes continuam disponíveis.
 
-Não há bloqueio permanente por idade ou horas em `localStorage`. O candidato pode corrigir os dados antes do envio ou voltar quando atender aos requisitos. Não se afirma coletar IP, pois o portal não implementa essa coleta.
+Three.js 0.180.0 está incluído localmente em `assets/vendor`, com sua licença MIT. Não há dependência de CDN para o 3D. Firebase Auth e fontes usam os serviços oficiais. Nenhuma informação de patrimônio, fortuna ou biografia não verificada foi atribuída ao Celso Oliveira.
+
+## Fontes da inspiração
+
+- Canal de referência: https://www.youtube.com/@etnrlz
+- Matéria que identifica Celso Oliveira como piloto e youtuber do canal Etnrlz: https://vivapariquera.com.br/noticia/42021/youtuber-grava-video-com-helicoptero-no-aeroporto-de-registro
+- Instagram do personagem: https://www.instagram.com/celsocpm2/
+
+Celso do CPM2 é uma criação independente de TH. Não representa o perfil pessoal de Celso Oliveira, uma parceria com ele ou uma afiliação oficial ao jogo.
