@@ -1413,3 +1413,293 @@ dialog::backdrop {
     gap: 8px;
   }
 }
+/* Collection page: a dedicated showroom with a quiet, square catalogue. */
+.garage-page .site-header {
+  border-bottom: 1px solid var(--line);
+}
+.garage-intro {
+  padding-top: 36px;
+}
+.garage-back {
+  font-size: 11px;
+  color: var(--muted);
+  display: inline-block;
+  margin-bottom: 50px;
+}
+.garage-intro-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 35px;
+}
+.garage-intro h1 {
+  font-size: clamp(80px, 9vw, 132px);
+  margin-bottom: 0;
+}
+.garage-intro-grid > div {
+  padding-bottom: 10px;
+}
+.garage-intro-grid p {
+  font-size: 19px;
+  line-height: 1.7;
+  color: #b9bdc4;
+}
+.collection-note {
+  font-size: 8px;
+  letter-spacing: 0.13em;
+  color: var(--muted);
+  line-height: 2;
+}
+.catalog {
+  padding-top: 45px;
+}
+.garage-page .garage-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 35px 24px;
+}
+.garage-page .car-visual {
+  aspect-ratio: 1;
+}
+.garage-page .car-caption h3 {
+  font-size: 28px;
+}
+.garage-page .car-open {
+  background: #15171b;
+}
+.garage-page .car-caption {
+  padding: 19px 18px;
+}
+.garage-page .car-visual img {
+  padding: 7%;
+}
+.garage-page .car-visual[data-fit="cover"] img {
+  padding: 0;
+}
+.garage-page .garage-empty {
+  padding: 100px 25px;
+}
+.garage-page .garage-toolbar {
+  margin-bottom: 30px;
+}
+.character-stage {
+  height: 690px;
+}
+.stage-floor {
+  bottom: 87px;
+  font: 9px var(--body);
+  letter-spacing: 0.16em;
+  color: #a5aebc;
+}
+.stage-label {
+  font-size: 9px;
+}
+.hero-copy {
+  padding-bottom: 35px;
+}
+.hero-art .portrait {
+  bottom: -15px;
+}
+.hero .hero-description {
+  margin-bottom: 0;
+}
+.analytics-panel {
+  margin: 40px 0 60px;
+  border-block: 1px solid var(--line);
+  padding: 28px 0;
+}
+.analytics-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+.analytics-heading h2 {
+  font-size: 35px;
+  margin-bottom: 20px;
+}
+.analytics-heading label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.analytics-heading select {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 10px;
+  font-size: 12px;
+}
+.analytics-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-top: 25px;
+}
+.metric {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 22px;
+}
+.metric > span {
+  display: block;
+  font-size: 11px;
+  color: #b2b8c1;
+}
+.metric strong {
+  display: block;
+  font: 600 52px var(--display);
+  margin: 12px 0;
+  color: var(--blue);
+}
+.metric small {
+  font-size: 9px;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.analytics-detail {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 40px;
+  padding-top: 35px;
+}
+.analytics-chart {
+  height: 160px;
+  display: flex;
+  align-items: end;
+  gap: 6px;
+  padding-bottom: 25px;
+}
+.chart-column {
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-items: center;
+  position: relative;
+}
+.chart-column > small {
+  font-size: 9px;
+  color: var(--muted);
+}
+.chart-bar {
+  display: block;
+  width: 100%;
+  background: linear-gradient(var(--blue), #24518a);
+  min-height: 2px;
+}
+.chart-date {
+  font-size: 8px;
+  position: absolute;
+  bottom: -22px;
+  color: var(--muted);
+}
+.analytics-chart:has(.chart-column:nth-child(8)) .chart-date {
+  display: none;
+}
+.analytics-detail ol {
+  padding-left: 20px;
+  margin: 0;
+}
+.analytics-detail li {
+  font-size: 12px;
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.analytics-detail li strong {
+  float: right;
+  margin-left: 15px;
+  color: var(--blue);
+}
+.analytics-detail li span {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1000px) {
+  .garage-page .garage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .character-grid {
+    grid-template-columns: 1fr 1.1fr;
+    gap: 30px;
+  }
+  .character-stage {
+    height: 610px;
+  }
+  .analytics-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .garage-intro {
+    padding-top: 25px;
+  }
+  .garage-back {
+    margin-bottom: 35px;
+  }
+  .garage-intro-grid {
+    display: block;
+  }
+  .garage-intro h1 {
+    font-size: 88px;
+  }
+  .garage-intro-grid p {
+    font-size: 15px;
+    margin-top: 25px;
+  }
+  .catalog {
+    padding-top: 20px;
+  }
+  .garage-page .garage-grid {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .garage-page .car-caption {
+    padding: 22px 18px;
+  }
+  .garage-page .car-caption h3 {
+    font-size: 34px;
+  }
+  .garage-page .car-visual {
+    aspect-ratio: 1;
+  }
+  .character-grid {
+    grid-template-columns: 1fr;
+  }
+  .character-stage {
+    height: 600px;
+  }
+  .hero-art {
+    height: 470px;
+    margin-top: 20px;
+  }
+  .hero-art .portrait {
+    height: 112%;
+    bottom: -55px;
+  }
+  .hero-copy {
+    padding-bottom: 0;
+  }
+  .analytics-heading {
+    align-items: start;
+  }
+  .analytics-heading h2 {
+    font-size: 29px;
+  }
+  .analytics-cards {
+    gap: 10px;
+  }
+  .metric {
+    padding: 14px;
+  }
+  .metric strong {
+    font-size: 44px;
+  }
+  .analytics-detail {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .analytics-chart {
+    height: 135px;
+  }
+}

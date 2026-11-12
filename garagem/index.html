@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <base href="../" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101113" />
+    <meta
+      name="description"
+      content="Explore os carros e projetos da garagem do Celso do CPM2. Abra cada exposição e conheça a história, a preparação e as fotos."
+    />
+    <title>A garagem — Celso do CPM2</title>
+    <link rel="icon" href="assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+
+    <script type="module" src="assets/garage-page.js"></script>
+  </head>
+  <body class="garage-page">
+    <a class="skip-link" href="garagem/#conteudo">Pular para o conteúdo</a>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="./" aria-label="Celso do CPM2, início"
+          >CELSO<span>DO CPM2<i></i></span
+        ></a>
+        <nav aria-label="Navegação principal">
+          <a href="./#legado">O legado</a
+          ><a href="./#historia">Minha história</a
+          ><a href="garagem/">Garagem ↗</a>
+        </nav>
+        <a
+          class="social-link"
+          href="https://www.instagram.com/celsocpm2/"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Instagram ↗</a
+        >
+      </div>
+    </header>
+    <main id="conteudo">
+      <section class="garage-intro wrap">
+        <a class="garage-back" href="./">← Voltar à minha história</a>
+        <p class="eyebrow">CELSO DO CPM2 / COLEÇÃO PESSOAL</p>
+        <div class="garage-intro-grid">
+          <h1>A MINHA<br /><em>GARAGEM.</em></h1>
+          <div>
+            <p>Cada projeto tem um motivo.<br />Cada máquina, uma história.</p>
+            <span class="collection-note"
+              >CARROS VIRTUAIS · CAR PARKING MULTIPLAYER 2<br />EXPOSIÇÃO
+              PESSOAL, SEM VENDAS</span
+            >
+          </div>
+        </div>
+      </section>
+      <section id="garagem" class="section wrap garage catalog">
+        <div class="garage-toolbar">
+          <div class="filters" role="group" aria-label="Filtrar exposições">
+            <button data-category="Todos" aria-pressed="true">Todos</button
+            ><button data-category="Esportivos" aria-pressed="false">
+              Esportivos</button
+            ><button data-category="Clássicos" aria-pressed="false">
+              Clássicos</button
+            ><button data-category="Projetos" aria-pressed="false">
+              Projetos
+            </button>
+          </div>
+          <label class="search-field"
+            ><span class="sr-only">Buscar carro</span
+            ><input
+              type="search"
+              id="garage-search"
+              placeholder="Buscar na garagem"
+            /><span aria-hidden="true">⌕</span></label
+          >
+        </div>
+        <p id="garage-status" class="muted" role="status">Abrindo a garagem…</p>
+        <div id="garage-grid" class="garage-grid"></div>
+        <button class="button secondary" id="load-more" hidden="">
+          Ver mais exposições ↓
+        </button>
+        <div class="garage-empty" id="garage-empty" hidden="">
+          <span>01 / EM BREVE</span>
+          <h3>A garagem está se preparando<br />para abrir as portas.</h3>
+          <p>
+            As exposições dos meus carros vão aparecer aqui.<br />Enquanto isso,
+            acompanhe os próximos rolês no Instagram.
+          </p>
+          <a
+            class="text-link"
+            href="https://www.instagram.com/celsocpm2/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >@celsocpm2 ↗</a
+          >
+        </div>
+      </section>
+    </main>
+    <footer class="wrap footer">
+      <a class="brand" href="./"
+        >CELSO<span>DO CPM2<i></i></span
+      ></a>
+      <p>
+        Uma criação de TH. Um legado da ASW.<small
+          >Projeto independente no universo de Car Parking Multiplayer 2.</small
+        >
+      </p>
+      <a href="adm.html">Acesso à garagem ↗</a>
+    </footer>
+
+    <dialog id="car-dialog" aria-labelledby="car-title">
+      <button class="dialog-close" id="close-car" aria-label="Fechar exposição">
+        ✕
+      </button>
+      <div id="car-detail"></div>
+    </dialog>
+  </body>
+</html>

@@ -1,230 +1,568 @@
 import * as THREE from "three";
 import { OrbitControls } from "./vendor/OrbitControls.js";
-// A real, procedural 3D sculpture inspired by the supplied outfit and pose.
-// Original artwork remains available separately; this is deliberately stylized.
+
+// Sculpted, continuous 3D surfaces. The reference is used as a facial texture,
+// not as a billboard or a sequence of flat views.
 export function createCharacterViewer(host) {
   const scene = new THREE.Scene(),
-    camera = new THREE.PerspectiveCamera(32, 1, 0.05, 50);
-  camera.position.set(0, 1.6, 5.5);
+    camera = new THREE.PerspectiveCamera(30, 1, 0.05, 30);
+  camera.position.set(0.15, 1.32, 5.05);
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
     powerPreference: "low-power",
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setClearColor(0, 0);
   host.append(renderer.domElement);
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 1.15, 0);
+  controls.target.set(0, 1.12, 0);
   controls.enablePan = false;
-  controls.minDistance = 2.8;
-  controls.maxDistance = 7;
-  controls.minPolarAngle = 0.45;
+  controls.minDistance = 2.3;
+  controls.maxDistance = 6;
+  controls.minPolarAngle = 0.5;
   controls.maxPolarAngle = 1.7;
-  controls.autoRotateSpeed = 1.4;
-  controls.enableDamping = false;
+  controls.autoRotateSpeed = 1;
   controls.update();
-  scene.add(new THREE.HemisphereLight(0xc4dcff, 0x6d5140, 2.6));
-  const key = new THREE.DirectionalLight(0xffe0bb, 3.5);
-  key.position.set(-3, 5, 4);
+  scene.add(new THREE.HemisphereLight(0xe1eaff, 0x3e342e, 2));
+  const key = new THREE.DirectionalLight(0xffead8, 3.2);
+  key.position.set(-2.5, 4, 4);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.left = -2;
+  key.shadow.camera.right = 2;
+  key.shadow.camera.top = 3;
+  key.shadow.camera.bottom = -1;
+  key.shadow.normalBias = 0.015;
   scene.add(key);
-  const rim = new THREE.DirectionalLight(0x479bff, 4);
+  const rim = new THREE.DirectionalLight(0x8ab6ff, 2.2);
   rim.position.set(3, 3, -3);
   scene.add(rim);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.8);
+  fill.position.set(3, 1, 4);
+  scene.add(fill);
   const figure = new THREE.Group();
+  figure.rotation.y = -0.12;
   scene.add(figure);
-  const mat = (color, roughness = 0.8, metalness = 0) =>
+  const material = (color, roughness = 0.8, metalness = 0) =>
     new THREE.MeshStandardMaterial({ color, roughness, metalness });
-  const skin = mat(0xb57c59),
-    skinLight = mat(0xc9906c),
-    shirt = mat(0x17181c),
-    pants = mat(0x222328),
-    seam = mat(0x37383d),
-    hair = mat(0x201611),
-    hairLight = mat(0x332219),
-    white = mat(0xdcdce0),
-    sole = mat(0xbfc2c8),
-    black = mat(0x101013),
-    metal = mat(0x68717d, 0.3, 0.75);
-  function mesh(geometry, material, pos, scale, parent = figure) {
-    const m = new THREE.Mesh(geometry, material);
-    m.position.set(...pos);
-    if (scale) m.scale.set(...scale);
-    m.castShadow = true;
-    m.receiveShadow = true;
-    parent.add(m);
-    return m;
+  const skin = material(0xb98462, 0.8),
+    skinShade = material(0xab7154, 0.82),
+    nails = material(0xd8ad94, 0.6),
+    shirt = material(0x18191d, 0.96),
+    pants = material(0x202125, 0.96),
+    seam = material(0x303137, 0.95),
+    black = material(0x101114),
+    hair = material(0x211813, 0.92),
+    hairHighlight = material(0x35261c, 0.9),
+    shoe = material(0xdddfe0, 0.6),
+    sole = material(0xbfc3c7, 0.9),
+    metal = material(0x878e96, 0.28, 0.85);
+  function mesh(g, m, p = [0, 0, 0], s = null, parent = figure) {
+    const o = new THREE.Mesh(g, m);
+    o.position.set(...p);
+    if (s) o.scale.set(...s);
+    o.castShadow = true;
+    o.receiveShadow = true;
+    parent.add(o);
+    return o;
   }
-  function ellipsoid(pos, scale, material, parent) {
+  function oval(p, s, m) {
+    return mesh(new THREE.SphereGeometry(1, 40, 28), m, p, s);
+  }
+  function curve(points, r, m) {
+    const c = new THREE.CatmullRomCurve3(
+      points.map((p) => new THREE.Vector3(...p)),
+    );
     return mesh(
-      new THREE.SphereGeometry(1, 28, 20),
-      material,
-      pos,
-      scale,
-      parent,
+      new THREE.TubeGeometry(c, Math.max(12, points.length * 6), r, 7, false),
+      m,
     );
   }
-  function box(pos, scale, material) {
-    return mesh(new THREE.BoxGeometry(...scale), material, pos);
+  function roundedBox(p, s, m, r = 0.012) {
+    const shape = new THREE.Shape(),
+      w = s[0],
+      h = s[1];
+    shape.moveTo(-w / 2 + r, -h / 2);
+    shape.lineTo(w / 2 - r, -h / 2);
+    shape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+    shape.lineTo(w / 2, h / 2 - r);
+    shape.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+    shape.lineTo(-w / 2 + r, h / 2);
+    shape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+    shape.lineTo(-w / 2, -h / 2 + r);
+    shape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+    const g = new THREE.ExtrudeGeometry(shape, {
+      depth: s[2],
+      bevelEnabled: true,
+      bevelSegments: 3,
+      steps: 1,
+      bevelSize: 0.003,
+      bevelThickness: 0.003,
+    });
+    g.translate(0, 0, -s[2] / 2);
+    return mesh(g, m, p);
   }
-  function limb(a, b, r1, r2, material) {
-    const av = new THREE.Vector3(...a),
-      bv = new THREE.Vector3(...b),
-      delta = bv.clone().sub(av);
-    const m = mesh(
-      new THREE.CylinderGeometry(r2, r1, delta.length(), 20),
-      material,
-      av.clone().add(bv).multiplyScalar(0.5).toArray(),
-    );
-    m.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      delta.normalize(),
-    );
-    ellipsoid(a, [r1, r1, r1], material);
-    ellipsoid(b, [r2, r2, r2], material);
-    return m;
+  // Continuous elliptical garment surface, with sculpted fold displacement.
+  function garment(rings, m, fold = 0) {
+    const positions = [],
+      uvs = [],
+      indices = [],
+      segments = 64;
+    for (let j = 0; j < rings.length; j++) {
+      const [y, rx, rz, cx = 0, cz = 0] = rings[j];
+      for (let i = 0; i <= segments; i++) {
+        const a = (i / segments) * Math.PI * 2;
+        const ripple =
+          fold * Math.sin(a * 7 + j * 0.95) * Math.sin(j * 0.75) +
+          fold * 0.5 * Math.sin(a * 11 - j * 1.5);
+        positions.push(
+          cx + Math.cos(a) * (rx + ripple),
+          y,
+          cz + Math.sin(a) * (rz + ripple * 0.65),
+        );
+        uvs.push(i / segments, j / (rings.length - 1));
+        if (j < rings.length - 1 && i < segments) {
+          const n = j * (segments + 1) + i;
+          indices.push(
+            n,
+            n + segments + 1,
+            n + 1,
+            n + 1,
+            n + segments + 1,
+            n + segments + 2,
+          );
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    g.setIndex(indices);
+    g.computeVertexNormals();
+    return mesh(g, m);
   }
-  // Cargo trousers with separate legs, pockets, hems, and fabric folds.
-  ellipsoid([0, 1.05, 0], [0.28, 0.22, 0.16], pants);
+  function limb(points, radii, m) {
+    const c = new THREE.CatmullRomCurve3(
+        points.map((p) => new THREE.Vector3(...p)),
+      ),
+      frames = c.computeFrenetFrames(32, false),
+      verts = [],
+      idx = [];
+    for (let j = 0; j <= 32; j++) {
+      const t = j / 32,
+        p = c.getPoint(t),
+        k = t * (radii.length - 1),
+        lo = Math.floor(k),
+        radius = THREE.MathUtils.lerp(
+          radii[lo],
+          radii[Math.min(lo + 1, radii.length - 1)],
+          k - lo,
+        );
+      for (let i = 0; i <= 24; i++) {
+        const a = (i / 24) * Math.PI * 2,
+          v = p
+            .clone()
+            .addScaledVector(frames.normals[j], Math.cos(a) * radius)
+            .addScaledVector(frames.binormals[j], Math.sin(a) * radius * 0.9);
+        verts.push(v.x, v.y, v.z);
+        if (j < 32 && i < 24) {
+          const n = j * 25 + i;
+          idx.push(n, n + 1, n + 25, n + 1, n + 26, n + 25);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    mesh(g, m);
+    oval(points[0], [radii[0], radii[0], radii[0] * 0.9], m);
+    const r = radii.at(-1);
+    oval(points.at(-1), [r, r, r * 0.9], m);
+  }
+  // Cargo trousers: no separated knee joints; wrinkles follow the entire leg.
+  oval([0, 1.07, 0], [0.245, 0.19, 0.145], pants);
   for (const s of [-1, 1]) {
-    limb([s * 0.15, 1.04, 0], [s * 0.19, 0.58, 0.015], 0.15, 0.115, pants);
-    limb([s * 0.19, 0.58, 0.015], [s * 0.2, 0.17, 0.03], 0.115, 0.09, pants);
-    box([s * 0.28, 0.76, 0.075], [0.09, 0.22, 0.16], pants);
-    box([s * 0.285, 0.85, 0.085], [0.105, 0.035, 0.17], seam);
-    for (let i = 0; i < 3; i++) {
-      const fold = ellipsoid(
-        [s * 0.19, 0.3 + i * 0.17, 0.105],
-        [0.105, 0.012, 0.02],
+    const rings = [];
+    for (let j = 0; j <= 26; j++) {
+      const t = j / 26,
+        y = 0.16 + t * 0.96,
+        rx = 0.079 + 0.057 * Math.sin(t * Math.PI * 0.65),
+        rz = 0.085 + 0.04 * t,
+        cx = s * (0.17 - 0.035 * t);
+      rings.push([y, rx, rz, cx, 0.01]);
+    }
+    garment(rings, pants, 0.006);
+    roundedBox([s * 0.255, 0.79, 0.065], [0.1, 0.18, 0.065], pants);
+    roundedBox([s * 0.255, 0.87, 0.105], [0.105, 0.032, 0.018], seam, 0.005);
+    curve(
+      [
+        [s * 0.265, 0.85, 0.118],
+        [s * 0.265, 0.73, 0.118],
+        [s * 0.225, 0.71, 0.12],
+      ],
+      0.0015,
+      seam,
+    );
+    curve(
+      [
+        [s * 0.23, 1.12, 0.08],
+        [s * 0.22, 1.03, 0.11],
+        [s * 0.19, 0.98, 0.13],
+      ],
+      0.002,
+      seam,
+    );
+    for (const y of [0.2, 0.41, 0.58])
+      curve(
+        [
+          [s * 0.25, y + 0.015, 0.04],
+          [s * 0.19, y, 0.1],
+          [s * 0.105, y + 0.02, 0.075],
+        ],
+        0.0023,
         seam,
       );
-      fold.rotation.z = s * 0.25;
-    }
-    ellipsoid([s * 0.2, 0.1, 0.1], [0.13, 0.09, 0.25], white);
-    ellipsoid([s * 0.2, 0.055, 0.11], [0.135, 0.035, 0.255], sole);
-    ellipsoid([s * 0.2, 0.14, 0.01], [0.095, 0.055, 0.1], white);
-    for (let i = 0; i < 4; i++)
-      limb(
-        [s * 0.2 - 0.07, 0.165, 0.1 + i * 0.025],
-        [s * 0.2 + 0.07, 0.165, 0.1 + i * 0.025],
-        0.006,
-        0.006,
+    // Layered leather sneakers, sole seam, toe perforations and crossed laces.
+    oval([s * 0.17, 0.083, 0.075], [0.112, 0.074, 0.205], shoe);
+    oval([s * 0.17, 0.035, 0.085], [0.116, 0.024, 0.212], sole);
+    oval([s * 0.17, 0.13, -0.015], [0.085, 0.056, 0.092], shoe);
+    curve(
+      [
+        [s * 0.27, 0.064, 0.08],
+        [s * 0.25, 0.067, 0.22],
+        [s * 0.17, 0.07, 0.275],
+        [s * 0.09, 0.067, 0.22],
+        [s * 0.065, 0.064, 0.08],
+      ],
+      0.0035,
+      sole,
+    );
+    for (let i = 0; i < 5; i++) {
+      const z = 0.055 + i * 0.027;
+      curve(
+        [
+          [s * 0.17 - 0.055, 0.15 - i * 0.003, z],
+          [s * 0.17, 0.165 - i * 0.003, z + 0.012],
+          [s * 0.17 + 0.055, 0.15 - i * 0.003, z + 0.023],
+        ],
+        0.0035,
         sole,
       );
+      curve(
+        [
+          [s * 0.17 + 0.055, 0.15 - i * 0.003, z],
+          [s * 0.17, 0.162 - i * 0.003, z + 0.012],
+          [s * 0.17 - 0.055, 0.15 - i * 0.003, z + 0.023],
+        ],
+        0.0028,
+        shoe,
+      );
+    }
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        oval(
+          [s * 0.17 + (i - 1) * 0.025, 0.132 - j * 0.003, 0.19 + j * 0.02],
+          [0.002, 0.0015, 0.002],
+          sole,
+        );
   }
-  // Shirt as a tapered torso, slightly broader across the shoulders.
-  const points = [
-    [0.255, 1.04],
-    [0.27, 1.1],
-    [0.245, 1.25],
-    [0.27, 1.45],
-    [0.31, 1.59],
-    [0.28, 1.66],
-    [0.13, 1.7],
-  ].map(([x, y]) => new THREE.Vector2(x, y));
-  const torso = mesh(new THREE.LatheGeometry(points, 40), shirt, [0, 0, 0]);
-  torso.scale.z = 0.62;
-  limb([0, 1.65, 0], [0, 1.81, 0], 0.085, 0.085, skin);
+  // A single tailored torso with soft folds and a fitted collar.
+  const torso = [];
+  for (let j = 0; j <= 30; j++) {
+    const t = j / 30,
+      y = 1.08 + t * 0.63;
+    let rx = 0.23 + 0.025 * Math.sin(t * Math.PI) + 0.025 * t,
+      rz = 0.135 + 0.025 * Math.sin(t * Math.PI);
+    if (t > 0.86) {
+      const q = (t - 0.86) / 0.14;
+      rx = THREE.MathUtils.lerp(0.27, 0.085, q);
+      rz = THREE.MathUtils.lerp(0.14, 0.075, q);
+    }
+    torso.push([y, rx, rz]);
+  }
+  garment(torso, shirt, 0.0035);
+  curve(
+    [
+      [-0.22, 1.09, 0.08],
+      [0, 1.085, 0.139],
+      [0.22, 1.09, 0.08],
+    ],
+    0.002,
+    seam,
+  );
+  limb(
+    [
+      [0, 1.67, 0],
+      [0, 1.79, 0],
+    ],
+    [0.072, 0.068],
+    skin,
+  );
   const collar = mesh(
-    new THREE.TorusGeometry(0.098, 0.018, 12, 36),
+    new THREE.TorusGeometry(0.08, 0.008, 12, 64),
     black,
-    [0, 1.69, 0],
+    [0, 1.711, 0],
   );
   collar.rotation.x = Math.PI / 2;
-  // Relaxed left arm and raised right forearm with thumbs-up hand.
-  limb([-0.27, 1.58, 0], [-0.37, 1.38, 0.01], 0.13, 0.105, shirt);
-  limb([-0.37, 1.37, 0.01], [-0.4, 1.12, 0.07], 0.086, 0.065, skin);
-  limb([-0.4, 1.12, 0.07], [-0.27, 1.0, 0.13], 0.065, 0.055, skin);
-  ellipsoid([-0.255, 0.99, 0.14], [0.065, 0.085, 0.042], skin);
-  limb([0.28, 1.58, 0], [0.39, 1.39, 0.015], 0.13, 0.105, shirt);
-  limb([0.39, 1.38, 0.015], [0.46, 1.19, 0.07], 0.085, 0.07, skin);
-  limb([0.46, 1.19, 0.07], [0.49, 1.49, 0.24], 0.07, 0.052, skinLight);
-  const watch = limb(
-    [0.485, 1.43, 0.21],
-    [0.49, 1.48, 0.24],
-    0.067,
-    0.067,
+  collar.scale.y = 0.87;
+  limb(
+    [
+      [-0.245, 1.62, 0],
+      [-0.29, 1.53, 0],
+      [-0.325, 1.43, 0.005],
+    ],
+    [0.105, 0.108, 0.088],
+    shirt,
+  );
+  limb(
+    [
+      [0.245, 1.62, 0],
+      [0.295, 1.53, 0],
+      [0.33, 1.43, 0.005],
+    ],
+    [0.105, 0.108, 0.088],
+    shirt,
+  );
+  limb(
+    [
+      [-0.326, 1.43, 0.005],
+      [-0.36, 1.25, 0.018],
+      [-0.355, 1.15, 0.025],
+      [-0.28, 1.04, 0.12],
+    ],
+    [0.074, 0.064, 0.052, 0.043],
+    skin,
+  );
+  oval([-0.261, 1.027, 0.125], [0.052, 0.071, 0.032], skin);
+  for (let i = 0; i < 4; i++)
+    curve(
+      [
+        [-0.29 + i * 0.019, 1.025, 0.15],
+        [-0.292 + i * 0.019, 0.99, 0.152],
+        [-0.282 + i * 0.019, 0.974, 0.14],
+      ],
+      0.008,
+      skin,
+    );
+  limb(
+    [
+      [0.33, 1.43, 0.005],
+      [0.385, 1.26, 0.045],
+      [0.39, 1.21, 0.065],
+      [0.4, 1.36, 0.14],
+      [0.405, 1.51, 0.205],
+    ],
+    [0.074, 0.066, 0.058, 0.053, 0.041],
+    skin,
+  );
+  // Watch face, strap and restrained metallic rim.
+  limb(
+    [
+      [0.403, 1.445, 0.176],
+      [0.405, 1.49, 0.196],
+    ],
+    [0.049, 0.048],
     black,
   );
-  box([0.49, 1.46, 0.295], [0.085, 0.07, 0.024], metal);
-  ellipsoid([0.49, 1.56, 0.26], [0.065, 0.09, 0.045], skinLight);
-  for (let i = 0; i < 4; i++)
-    ellipsoid([0.49, 1.515 + i * 0.026, 0.297], [0.06, 0.017, 0.023], skin);
-  limb([0.44, 1.56, 0.26], [0.43, 1.7, 0.26], 0.025, 0.022, skinLight);
-  // Head, ears, jaw, nose, eyes, brows, beard and individual hair curls.
-  ellipsoid([0, 1.96, 0], [0.155, 0.205, 0.14], skinLight);
-  ellipsoid([0, 1.85, 0.055], [0.115, 0.1, 0.095], skin);
+  roundedBox([0.405, 1.47, 0.235], [0.062, 0.069, 0.015], metal, 0.012);
+  roundedBox([0.405, 1.47, 0.246], [0.051, 0.056, 0.006], black, 0.009);
+  curve(
+    [
+      [0.405, 1.47, 0.251],
+      [0.415, 1.487, 0.251],
+    ],
+    0.0015,
+    shoe,
+  );
+  curve(
+    [
+      [0.405, 1.47, 0.251],
+      [0.39, 1.47, 0.251],
+    ],
+    0.0015,
+    shoe,
+  );
+  // Closed fingers wrap around the palm; the thumb rises from its side.
+  oval([0.407, 1.56, 0.222], [0.052, 0.071, 0.033], skin);
+  for (let i = 0; i < 4; i++) {
+    const y = 1.525 + i * 0.024;
+    curve(
+      [
+        [0.444, y, 0.214],
+        [0.454, y, 0.239],
+        [0.433, y, 0.259],
+        [0.399, y, 0.26],
+        [0.385, y, 0.247],
+      ],
+      0.0105,
+      skin,
+    );
+    curve(
+      [
+        [0.43, y - 0.007, 0.267],
+        [0.407, y - 0.007, 0.267],
+      ],
+      0.0008,
+      skinShade,
+    );
+  }
+  limb(
+    [
+      [0.376, 1.565, 0.23],
+      [0.36, 1.61, 0.239],
+      [0.362, 1.67, 0.235],
+    ],
+    [0.021, 0.02, 0.016],
+    skin,
+  );
+  oval([0.361, 1.675, 0.236], [0.016, 0.019, 0.016], skin);
+  oval([0.36, 1.678, 0.25], [0.01, 0.014, 0.002], nails);
+  // Sculpted adult head. Front UVs project the face from the supplied character art.
+  const headG = new THREE.SphereGeometry(1, 96, 64),
+    p = headG.attributes.position,
+    uv = headG.attributes.uv;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i),
+      y = p.getY(i),
+      z = p.getZ(i);
+    let xx = x * 0.113 * (y < -0.35 ? 1 + (y + 0.35) * 0.13 : 1),
+      yy = 1.926 + y * 0.153,
+      zz = z * 0.105;
+    if (z > 0) {
+      const gauss = (cx, cy, sx, sy) =>
+        Math.exp(-((x - cx) ** 2 / sx + (y - cy) ** 2 / sy));
+      zz +=
+        0.036 * gauss(0, -0.05, 0.018, 0.11) +
+        0.018 * gauss(0, -0.22, 0.035, 0.025) +
+        0.009 * gauss(0, -0.57, 0.12, 0.03) -
+        0.006 *
+          (gauss(-0.4, 0.17, 0.05, 0.015) + gauss(0.4, 0.17, 0.05, 0.015));
+    }
+    p.setXYZ(i, xx, yy, zz);
+    const front = z >= 0;
+    const sx = 551 + x * 44,
+      sy = 111 - y * 54;
+    uv.setXY(i, sx / 1448, 1 - sy / 1086);
+  }
+  headG.computeVertexNormals();
+  const faceMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.82,
+  });
+  const faceTexture = new THREE.TextureLoader().load(
+    new URL("./images/character-sheet.png", import.meta.url).href,
+    () => render(),
+  );
+  faceTexture.colorSpace = THREE.SRGBColorSpace;
+  faceTexture.anisotropy = Math.min(
+    8,
+    renderer.capabilities.getMaxAnisotropy(),
+  );
+  faceMat.map = faceTexture;
+  headG.clearGroups();
+  for (let k = 0; k < headG.index.count; k += 3) {
+    const a = headG.index.getX(k),
+      b = headG.index.getX(k + 1),
+      c = headG.index.getX(k + 2);
+    const front = (p.getZ(a) + p.getZ(b) + p.getZ(c)) / 3 > 0;
+    headG.addGroup(k, 3, front ? 0 : 1);
+  }
+  mesh(headG, [faceMat, skin]);
+  for (const s of [-1, 1]) {
+    oval([s * 0.115, 1.93, -0.005], [0.018, 0.037, 0.022], skin);
+    oval([s * 0.124, 1.931, 0.009], [0.007, 0.024, 0.009], skinShade);
+    curve(
+      [
+        [s * 0.12, 1.955, 0.01],
+        [s * 0.13, 1.94, 0.017],
+        [s * 0.12, 1.912, 0.01],
+      ],
+      0.003,
+      skin,
+    );
+  }
+  // Hair cap with a lower back and taper, then dozens of curved locks.
+  const cap = new THREE.SphereGeometry(
+    1,
+    64,
+    32,
+    0,
+    Math.PI * 2,
+    0,
+    Math.PI * 0.52,
+  );
+  mesh(cap, hair, [0, 2.04, -0.008], [0.123, 0.085, 0.115]);
+  oval([0, 1.988, -0.087], [0.098, 0.073, 0.035], hair);
+  for (let i = 0; i < 90; i++) {
+    const a = i * 2.39996,
+      r = 0.108 * Math.sqrt((i + 0.5) / 90),
+      x = Math.cos(a) * r,
+      z = Math.sin(a) * r * 0.9 - 0.008,
+      y = 2.065 + 0.045 * (1 - r / 0.12);
+    const sway = 0.012 + Math.sin(i) * 0.004;
+    oval(
+      [x, y + 0.002, z],
+      [0.019, 0.017, 0.018],
+      i % 5 === 0 ? hairHighlight : hair,
+    );
+    curve(
+      [
+        [x - 0.015, y - 0.01, z],
+        [x - 0.006, y + 0.014, z + sway],
+        [x + 0.012, y + 0.013, z + 0.009],
+        [x + 0.018, y, z - 0.005],
+      ],
+      0.0065,
+      i % 5 === 0 ? hairHighlight : hair,
+    );
+  }
+  // Subtle stubble at the sideburns, keeping the illustrated face recognizable.
   for (const s of [-1, 1])
-    ellipsoid([s * 0.155, 1.96, 0], [0.025, 0.05, 0.034], skin);
-  ellipsoid([0, 1.94, 0.143], [0.028, 0.05, 0.035], skinLight);
-  ellipsoid([0, 1.9, 0.158], [0.035, 0.02, 0.022], skin);
-  for (const s of [-1, 1]) {
-    ellipsoid([s * 0.062, 1.985, 0.125], [0.039, 0.019, 0.013], white);
-    ellipsoid([s * 0.061, 1.985, 0.138], [0.013, 0.015, 0.007], hair);
-    ellipsoid([s * 0.061, 1.987, 0.144], [0.006, 0.008, 0.003], black);
-    const brow = ellipsoid(
-      [s * 0.062, 2.021, 0.13],
-      [0.045, 0.011, 0.012],
-      hair,
-    );
-    brow.rotation.z = s * -0.12;
-  }
-  ellipsoid([0, 1.84, 0.104], [0.085, 0.042, 0.029], hair);
-  ellipsoid([0, 1.86, 0.137], [0.055, 0.009, 0.01], skinLight);
-  for (const s of [-1, 1]) {
-    const b = ellipsoid([s * 0.035, 1.885, 0.145], [0.035, 0.009, 0.007], hair);
-    b.rotation.z = s * -0.16;
-  }
-  ellipsoid([0, 2.095, -0.018], [0.16, 0.1, 0.14], hair);
-  ellipsoid([0, 2.01, -0.108], [0.13, 0.12, 0.045], hair);
-  for (let i = 0; i < 54; i++) {
-    const angle = i * 2.39996,
-      r = 0.145 * Math.sqrt((i + 0.5) / 54),
-      x = Math.cos(angle) * r,
-      z = Math.sin(angle) * r * 0.8;
-    const y = 2.11 + 0.045 * (1 - r / 0.15);
-    const curl = ellipsoid(
-      [x, y, z - 0.005],
-      [0.035, 0.04, 0.029],
-      i % 4 === 0 ? hairLight : hair,
-    );
-    curl.rotation.set(i * 0.2, i * 0.3, i * 0.4);
-  }
-  // Small original character chest mark, rendered as texture on the shirt.
+    for (let i = 0; i < 18; i++) {
+      const t = i / 18;
+      oval(
+        [s * (0.102 - 0.018 * t), 1.95 - 0.09 * t, 0.041 + 0.025 * t],
+        [0.0015, 0.003, 0.0015],
+        hair,
+      );
+    }
   const label = document.createElement("canvas");
-  label.width = 256;
-  label.height = 128;
+  label.width = 512;
+  label.height = 256;
   const ctx = label.getContext("2d");
-  ctx.fillStyle = "#e6e6e5";
-  ctx.font = "italic bold 52px sans-serif";
+  ctx.fillStyle = "#dedfe1";
+  ctx.font = "italic 800 92px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("CPM2", 128, 78);
-  const texture = new THREE.CanvasTexture(label);
-  texture.colorSpace = THREE.SRGBColorSpace;
+  ctx.fillText("CPM2", 256, 154);
+  const labelTexture = new THREE.CanvasTexture(label);
+  labelTexture.colorSpace = THREE.SRGBColorSpace;
   mesh(
-    new THREE.PlaneGeometry(0.13, 0.065),
+    new THREE.PlaneGeometry(0.1, 0.05),
     new THREE.MeshBasicMaterial({
-      map: texture,
+      map: labelTexture,
       transparent: true,
       depthWrite: false,
     }),
-    [0.125, 1.53, 0.164],
+    [0.105, 1.53, 0.153],
   );
   const platform = mesh(
-    new THREE.CylinderGeometry(0.72, 0.76, 0.06, 64),
-    mat(0x202733, 0.4, 0.45),
-    [0, -0.018, 0],
+    new THREE.CylinderGeometry(0.63, 0.65, 0.035, 96),
+    material(0x20242b, 0.45, 0.45),
+    [0, 0.0, 0],
     null,
     scene,
   );
   platform.receiveShadow = true;
   const ring = mesh(
-    new THREE.TorusGeometry(0.7, 0.008, 8, 80),
-    new THREE.MeshBasicMaterial({ color: 0x479bff }),
+    new THREE.TorusGeometry(0.63, 0.003, 8, 100),
+    new THREE.MeshBasicMaterial({ color: 0x79a8de }),
     [0, 0.018, 0],
     null,
     scene,
@@ -269,11 +607,11 @@ export function createCharacterViewer(host) {
     render();
   });
   resize.observe(host);
-  const intersection = new IntersectionObserver((entries) => {
+  const observer = new IntersectionObserver((entries) => {
     inViewport = entries[0].isIntersecting;
     schedule();
   });
-  intersection.observe(host);
+  observer.observe(host);
   document.addEventListener("visibilitychange", schedule);
   function rotate(amount) {
     figure.rotation.y += amount;
@@ -289,7 +627,7 @@ export function createCharacterViewer(host) {
     e.preventDefault();
     document.getElementById("model-status").hidden = false;
     document.getElementById("model-status").textContent =
-      "O 3D foi pausado pelo dispositivo. Recarregue a página ou use a arte original.";
+      "O dispositivo pausou o 3D. Recarregue a página para tentar novamente.";
   });
   render();
   return {
@@ -300,9 +638,9 @@ export function createCharacterViewer(host) {
     },
     reset() {
       controls.autoRotate = false;
-      figure.rotation.y = 0;
-      camera.position.set(0, 1.6, 5.5);
-      controls.target.set(0, 1.15, 0);
+      figure.rotation.y = -0.12;
+      camera.position.set(0.15, 1.32, 5.05);
+      controls.target.set(0, 1.12, 0);
       controls.update();
       render();
     },

@@ -6,12 +6,18 @@ test("history precedes character origin and all Instagram links use the new prof
   const html = f.dom.serialize();
   assert.ok(html.indexOf('id="legado"') < html.indexOf('id="historia"'));
   assert.equal(f.win.document.querySelectorAll("[data-apply]").length, 0);
+  assert.equal(
+    f.win.document.querySelector(".hero button, .hero .button"),
+    null,
+  );
+  assert.equal(f.$("garage-grid"), null);
+  assert.equal(f.win.document.querySelector("[data-pose]"), null);
   for (const a of f.win.document.querySelectorAll('a[href*="instagram"]'))
     assert.match(a.href, /instagram.com\/celsocpm2/);
   f.dom.window.close();
 });
 test("gallery filters, search and modal photos work; injected HTML stays text", async () => {
-  const f = await fixture("index.html", {
+  const f = await fixture("garagem/index.html", {
     data: {
       one: { ...post, title: "<img src=x onerror=alert(1)>" },
       two: { ...post, title: "Clássico", category: "Clássicos" },
@@ -40,10 +46,10 @@ test("gallery filters, search and modal photos work; injected HTML stays text", 
   f.dom.window.close();
 });
 test("empty garage and failed server have different states, failed server can retry", async () => {
-  const empty = await fixture("index.html", { data: null });
+  const empty = await fixture("garagem/index.html", { data: null });
   assert.equal(empty.$("garage-empty").hidden, false);
   empty.dom.window.close();
-  const f = await fixture("index.html", { status: 401 });
+  const f = await fixture("garagem/index.html", { status: 401 });
   assert.equal(f.$("garage-empty").hidden, true);
   assert.match(f.$("garage-status").textContent, /Não foi possível/);
   f.$("garage-status").querySelector("button").click();

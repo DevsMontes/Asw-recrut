@@ -34,7 +34,7 @@ Publicar as regras junto da nova interface. Elas encerram definitivamente novas 
 
 ## Personagem e imagens
 
-As duas artes fornecidas por TH são usadas em `assets/images`. A abertura e as quatro vistas mostram o personagem original. O modo 3D é uma escultura procedural estilizada feita com Three.js, com geometria real, controles de órbita, zoom, teclado e giro automático opcional; não é uma reconstrução fotorrealista do desenho. O 3D é carregado sob demanda e pausa a renderização fora da tela. Em dispositivos sem WebGL, as artes continuam disponíveis.
+As duas artes fornecidas por TH são usadas em `assets/images`. A abertura mostra o personagem original dando seu joinha característico. A apresentação 3D é uma escultura procedural estilizada feita com Three.js, com geometria real, controles de órbita, zoom, teclado e giro automático opcional; não é uma reconstrução fotorrealista do desenho. O 3D é carregado sob demanda e pausa a renderização fora da tela. Em dispositivos sem WebGL, a arte da abertura continua disponível.
 
 Three.js 0.180.0 está incluído localmente em `assets/vendor`, com sua licença MIT. Não há dependência de CDN para o 3D. Firebase Auth e fontes usam os serviços oficiais. Nenhuma informação de patrimônio, fortuna ou biografia não verificada foi atribuída ao Celso Oliveira.
 
@@ -45,3 +45,13 @@ Three.js 0.180.0 está incluído localmente em `assets/vendor`, com sua licença
 - Instagram do personagem: https://www.instagram.com/celsocpm2/
 
 Celso do CPM2 é uma criação independente de TH. Não representa o perfil pessoal de Celso Oliveira, uma parceria com ele ou uma afiliação oficial ao jogo.
+
+## Garagem independente e métricas
+
+A coleção fica em `garagem/index.html` (`/Asw-recrut/garagem/`), com cartões quadrados em três colunas no desktop, duas no tablet e uma coluna no celular. A página inicial não tem botões de chamada no hero nem lista de carros. A exposição aberta suporta múltiplas fotos e link direto `#carro=ID`.
+
+O admin contém estimativas dos últimos 7 ou 30 dias: sessões de visita por aba/dia, visitas à garagem, aberturas por carro/sessão/dia, cliques no Instagram, gráfico diário e carros mais abertos. A taxa de interação é a proporção das sessões registradas que abriram um carro ou clicaram no Instagram. Isso não mede seguidores, curtidas ou dados internos do Instagram.
+
+Os eventos contêm somente tipo, horário do servidor e ID do carro quando aplicável; uma chave aleatória em sessionStorage deduplica a sessão. Não se armazenam IP, nome, contato, localização, user-agent ou impressão digital. Navegadores automatizados, localhost e Global Privacy Control não são contados. Bloqueadores, várias abas e bots podem afetar as estimativas. Não há histórico anterior à implantação. Leituras dos eventos são exclusivas da conta administrativa; escrita anônima é validada, somente de novos eventos, sem permitir edição ou exclusão. Como toda métrica no cliente, os números não são auditáveis e podem ser manipulados por solicitações externas. Para grande tráfego, migrar coleta para um backend com limitação de taxa e retenção automática.
+
+O personagem agora abre diretamente em 3D, com giro livre por arraste, zoom, teclado, rotação automática opcional e recentralização. As quatro poses não são exibidas como um falso giro 360. A malha foi refinada com superfícies contínuas, pregas, bolsos, calçados, cadarços, mãos, relógio e cabelo; a arte do personagem orienta a textura facial. Continua sendo um modelo estilizado, não um escaneamento 3D de uma pessoa real.

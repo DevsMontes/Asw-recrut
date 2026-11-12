@@ -204,6 +204,11 @@ async function refresh() {
   }
 }
 function renderRecords() {
+  window.dispatchEvent(
+    new CustomEvent("garage-records", {
+      detail: Object.fromEntries(records.map((p) => [p.id, p.title])),
+    }),
+  );
   $("post-count").textContent = String(records.length);
   $("admin-posts").replaceChildren();
   if (!records.length)

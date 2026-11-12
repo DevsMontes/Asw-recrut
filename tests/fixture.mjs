@@ -25,7 +25,13 @@ export async function fixture(
 ) {
   const dom = new JSDOM(
       await readFile(new URL("../" + page, import.meta.url), "utf8"),
-      { url: "http://localhost/", runScripts: "outside-only" },
+      {
+        url:
+          page === "garagem/index.html"
+            ? "http://localhost/Asw-recrut/garagem/"
+            : "http://localhost/Asw-recrut/",
+        runScripts: "outside-only",
+      },
     ),
     win = dom.window,
     calls = [];
@@ -84,12 +90,25 @@ export async function fixture(
   win.eval(
     `window.__garage=(()=>{${garage};return {validatePost,carCard,showCar,readPosts,MAX_IMAGE_LENGTH};})()`,
   );
-  const name = page === "index.html" ? "public" : "admin";
+  win.IntersectionObserver = class {
+    observe() {}
+    disconnect() {}
+  };
+  const name =
+    page === "index.html"
+      ? "public"
+      : page === "garagem/index.html"
+        ? "garage-page"
+        : "admin";
   let src = await readFile(
     new URL(`../assets/${name}.js`, import.meta.url),
     "utf8",
   );
   src = src
+    .replace(
+      /^import .* from ["']\.\/analytics.js["'];/m,
+      "const track=()=>{}, bindTracking=()=>{};",
+    )
     .replace(
       /^import \{([^}]+)\} from ["']\.\/shared.js["'];/m,
       "const {$1}=window.__shared;",

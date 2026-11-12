@@ -113,3 +113,34 @@ test("recruitment stays closed even if old config says open; legacy personal dat
     }),
   );
 });
+
+test("anonymous analytics are append-only, validated and readable only by owner", async () => {
+  const path = "analytics/2026-11-12/" + "a".repeat(36) + "_visit";
+  const value = { kind: "visit", at: serverTimestamp() };
+  await assertSucceeds(set(ref(publicDB, path), value));
+  await assertFails(set(ref(publicDB, path), value));
+  await assertFails(set(ref(publicDB, path), null));
+  await assertFails(get(ref(publicDB, "analytics")));
+  await assertFails(get(ref(otherDB, "analytics")));
+  await assertSucceeds(get(ref(adminDB, "analytics")));
+  for (const [i, change] of [
+    { kind: "bad" },
+    { at: 1 },
+    { email: "private@example.test" },
+    { kind: "car" },
+    { kind: "visit", car: "one" },
+  ].entries())
+    await assertFails(
+      set(ref(publicDB, "analytics/2026-11-12/" + "b".repeat(36) + "_" + i), {
+        ...value,
+        ...change,
+      }),
+    );
+  await assertSucceeds(
+    set(ref(publicDB, "analytics/2026-11-12/" + "c".repeat(36) + "_car_one"), {
+      kind: "car",
+      car: "one",
+      at: serverTimestamp(),
+    }),
+  );
+});
