@@ -1703,3 +1703,101 @@ dialog::backdrop {
     height: 135px;
   }
 }
+
+/* Keep mobile proportions stable with browser text scaling and fallback fonts. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+.hero {
+  height: calc(100vh - 96px);
+  height: calc(100svh - 96px);
+}
+dialog {
+  max-height: 90vh;
+  max-height: 90svh;
+  overflow-y: auto;
+}
+.hero-art .portrait {
+  width: auto;
+}
+.analytics-cards,
+.analytics-detail {
+  min-width: 0;
+}
+.analytics-cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1000px) {
+  .analytics-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .hero {
+    height: auto;
+  }
+  .hero-art {
+    height: clamp(340px, 110vw, 470px);
+    flex: none;
+    overflow: hidden;
+  }
+  .hero-art .portrait {
+    width: clamp(112px, 36.465vw, 156px);
+    height: 100%;
+    max-height: none;
+    bottom: 0;
+  }
+  .hero h1 {
+    font-size: clamp(44px, 12vw, 78px);
+    overflow-wrap: anywhere;
+  }
+  .garage-intro h1 {
+    font-size: clamp(58px, 17vw, 88px);
+    overflow-wrap: anywhere;
+  }
+  .section h2,
+  .legacy h2 {
+    overflow-wrap: anywhere;
+  }
+  .character-stage {
+    height: clamp(440px, 150vw, 600px);
+    min-width: 0;
+  }
+  .analytics-heading {
+    flex-wrap: wrap;
+  }
+  .analytics-heading > *,
+  .metric,
+  .analytics-detail > *,
+  .editor-grid > *,
+  .form-grid > * {
+    min-width: 0;
+  }
+  .metric {
+    overflow-wrap: anywhere;
+  }
+  input,
+  textarea,
+  select {
+    max-width: 100%;
+    min-width: 0;
+    font-size: 16px;
+  }
+  .analytics-heading select {
+    font-size: 16px;
+  }
+  .chart-date {
+    white-space: nowrap;
+  }
+  .analytics-chart {
+    gap: 3px;
+  }
+  .site-header {
+    gap: 10px;
+  }
+  dialog {
+    width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
+  }
+}
