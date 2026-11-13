@@ -78,6 +78,7 @@ export function carCard(post, onOpen) {
   return card;
 }
 export function showCar(post, target) {
+  target.classList.add("exhibition-detail");
   let index = 0;
   const visual = photoVisual(post);
   visual.classList.add("detail-photo");

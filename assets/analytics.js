@@ -2,6 +2,9 @@ import { firebaseConfig } from "./shared.js";
 const KINDS = ["visit", "garage", "car", "instagram"];
 let session;
 const sent = new Set();
+export function analyticsDay(now = Date.now()) {
+  return new Date(now).toISOString().slice(0, 10);
+}
 function persistentId() {
   if (session) return session;
   try {

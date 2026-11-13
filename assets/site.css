@@ -1849,3 +1849,71 @@ dialog {
     max-width: calc(100% - 20px);
   }
 }
+
+/* The exhibition image has a bounded height regardless of photo orientation. */
+.exhibition-detail > .detail-photo {
+  aspect-ratio: auto;
+  height: 52vh;
+  height: 52svh;
+  min-height: 240px;
+}
+.exhibition-detail > .detail-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+}
+@media (min-width: 900px) {
+  #car-dialog {
+    width: min(1200px, calc(100% - 64px));
+    overflow: hidden;
+  }
+  .exhibition-detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: min(740px, 86vh);
+    height: min(740px, 86svh);
+  }
+  .exhibition-detail > .detail-photo {
+    grid-column: 1;
+    grid-row: 1;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    border-right: 1px solid var(--line);
+  }
+  .exhibition-detail > .photo-nav {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+    padding: 14px;
+    background: #171b21;
+    border-right: 1px solid var(--line);
+  }
+  .exhibition-detail > .detail-body {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 64px 32px 28px;
+  }
+  .exhibition-detail > .detail-body h2 {
+    font-size: clamp(34px, 3.4vw, 50px);
+    line-height: 1.05;
+  }
+  .exhibition-detail .specs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .exhibition-detail > .detail-body p {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+}
+.chart-bar {
+  flex-shrink: 0;
+}
+.chart-column {
+  justify-content: flex-end;
+}
