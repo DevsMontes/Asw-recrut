@@ -38,6 +38,13 @@ test("gallery filters, search and modal photos work; injected HTML stays text", 
     f.$("car-detail").querySelector(".photo-nav span").textContent,
     "2 / 2",
   );
+  f.$("car-detail").querySelector('[aria-label="Expandir foto"]').click();
+  const enlarged = f.$("car-detail").querySelector(".photo-lightbox");
+  assert.equal(enlarged.open, true);
+  assert.match(enlarged.querySelector("img").alt, /foto 2/);
+  enlarged.querySelector("button").click();
+  assert.equal(enlarged.open, false);
+  assert.equal(f.$("car-dialog").open, true);
   f.$("close-car").click();
   assert.equal(f.$("car-dialog").open, false);
   f.$("garage-search").value = "Nada";
