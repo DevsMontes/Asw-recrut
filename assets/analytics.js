@@ -2,18 +2,23 @@ import { firebaseConfig } from "./shared.js";
 const KINDS = ["visit", "garage", "car", "instagram"];
 let session;
 const sent = new Set();
-function sessionId() {
+function persistentId() {
   if (session) return session;
   try {
-    session = sessionStorage.getItem("celso_session");
+    session = localStorage.getItem("celso_visitor_v2");
     if (!/^[a-f0-9-]{36}$/.test(session || "")) {
       session = crypto.randomUUID();
-      sessionStorage.setItem("celso_session", session);
+      localStorage.setItem("celso_visitor_v2", session);
     }
   } catch {
-    session = crypto.randomUUID();
+    return null;
   }
   return session;
+}
+async function sessionId() {
+  return navigator.locks
+    ? navigator.locks.request("celso-visitor", persistentId)
+    : persistentId();
 }
 export function eventRecord(kind, car = "", now = Date.now()) {
   if (!KINDS.includes(kind)) throw new Error("Invalid event");
@@ -31,8 +36,10 @@ export async function track(kind, car = "") {
     return;
   try {
     const event = eventRecord(kind, car);
+    const visitor = await sessionId();
+    if (!visitor) return;
     const day = new Date().toISOString().slice(0, 10),
-      id = `${sessionId()}_${kind}${car ? "_" + car : ""}`,
+      id = `${visitor}_${kind}${car ? "_" + car : ""}`,
       key = `${day}/${id}`;
     if (sent.has(key)) return;
     sent.add(key);

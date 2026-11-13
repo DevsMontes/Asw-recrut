@@ -1,5 +1,5 @@
 import { $, node, firebaseConfig, ADMIN_UID } from "./shared.js";
-import { summarizeAnalytics } from "./analytics.js";
+import { summarizeAnalytics, analyticsDay } from "./analytics.js";
 let auth,
   sequence = 0;
 let titles = {};
@@ -17,7 +17,7 @@ async function load() {
   const seq = ++sequence;
   if (auth?.currentUser?.uid !== ADMIN_UID) return;
   const days = Number($("analytics-period").value);
-  $("analytics-status").textContent = "Atualizando as estimativas…";
+  $("analytics-status").textContent = "Atualizando as visitas registradas…";
   try {
     const token = await auth.currentUser.getIdToken();
     const start = new Date();
@@ -25,7 +25,7 @@ async function load() {
     const params = new URLSearchParams({
       auth: token,
       orderBy: JSON.stringify("$key"),
-      startAt: JSON.stringify(start.toISOString().slice(0, 10)),
+      startAt: JSON.stringify(analyticsDay(start)),
     });
     const response = await fetch(
       `${firebaseConfig.databaseURL}/analytics.json?${params}`,
@@ -37,10 +37,10 @@ async function load() {
     const stats = summarizeAnalytics(data, days);
     $("analytics-cards").replaceChildren();
     for (const [key, label, note] of [
-      ["visit", "Visitas estimadas", "Uma sessão por aba e dia"],
-      ["garage", "Visitas à garagem", "Sessões que abriram a coleção"],
-      ["car", "Aberturas de carros", "Uma vez por carro, sessão e dia"],
-      ["instagram", "Cliques no Instagram", "Sessões que tocaram no link"],
+      ["visit", "Visitas registradas", "Uma por navegador por dia"],
+      ["garage", "Visitas à garagem", "Navegadores que abriram a coleção"],
+      ["car", "Aberturas de carros", "Uma vez por carro, navegador e dia"],
+      ["instagram", "Cliques no Instagram", "Navegadores que tocaram no link"],
     ]) {
       const card = node("article", "metric");
       card.append(
@@ -67,7 +67,7 @@ async function load() {
       $("analytics-chart").append(bar);
     }
     $("analytics-rate").textContent =
-      `${stats.rate}% das sessões registradas abriram um carro ou tocaram no Instagram.`;
+      `${stats.rate}% das visitas registradas abriram um carro ou tocaram no Instagram.`;
     $("analytics-top").replaceChildren();
     const top = Object.entries(stats.top)
       .sort((a, b) => b[1] - a[1])
@@ -86,12 +86,12 @@ async function load() {
         node("li", "muted", "As primeiras interações aparecerão aqui."),
       );
     $("analytics-status").textContent = stats.visit
-      ? "Atualizado agora · estimativas, não pessoas únicas."
+      ? "Atualizado agora · contagem diária por navegador."
       : "Ainda não há visitas registradas neste período.";
   } catch {
     if (seq === sequence) {
       $("analytics-status").textContent =
-        "Não foi possível atualizar as estimativas. Você pode continuar publicando normalmente.";
+        "Não foi possível atualizar as visitas registradas. Você pode continuar publicando normalmente.";
     }
   }
 }
