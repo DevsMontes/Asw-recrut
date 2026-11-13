@@ -124,6 +124,28 @@ export function showCar(post, target) {
     target.append(nav);
   }
   target.append(body);
+  const expand = node("button", "photo-expand");
+  expand.type = "button";
+  expand.setAttribute("aria-label", "Expandir foto");
+  expand.append(node("span", "", "⤢ Expandir foto"));
+  visual.append(expand);
+  const enlarged = node("dialog", "photo-lightbox");
+  enlarged.setAttribute("aria-label", "Foto ampliada da exposição");
+  const close = node("button", "photo-lightbox-close", "✕ Fechar foto"),
+    image = node("img");
+  close.type = "button";
+  enlarged.append(close, image);
+  target.append(enlarged);
+  expand.onclick = () => {
+    image.src = visual.querySelector("img").src;
+    image.alt = visual.querySelector("img").alt;
+    enlarged.showModal();
+  };
+  close.onclick = () => enlarged.close();
+  enlarged.addEventListener("close", () => expand.focus());
+  enlarged.addEventListener("click", (event) => {
+    if (event.target === enlarged) enlarged.close();
+  });
 }
 export async function readPosts() {
   const response = await fetch(
